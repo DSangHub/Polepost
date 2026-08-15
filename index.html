@@ -580,7 +580,10 @@ footer{border-top:1.5px solid var(--toner);background:var(--paper);padding:26px 
    Supabase dashboard -> Project Settings -> API. The anon key is safe to
    ship in client code; it only grants what your row-level security allows. */
 const SUPABASE = { url: '', anon: '' };
-
+const SUPABASE = {
+  url:  'https://nwwkiljmxbtzoxafsesq.supabase.co',
+  anon: 'sb_publishable_FUZwE9jkUe_H7PNUuGkivQ_Fnp8KCbe'
+};
 /* ---------- data ---------- */
 const CATS = [
   {id:'gigs',        label:'Gigs',                color:'var(--c-gigs)'},
