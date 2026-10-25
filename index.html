@@ -372,6 +372,36 @@ footer{border-top:1.5px solid var(--toner);background:var(--paper);padding:26px 
   border-bottom:1.5px solid var(--line);margin-bottom:4px;
 }
 .acct-head .av{width:42px;height:42px;font-size:19px}
+.profile-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0}
+.profile-gallery figure{margin:0;border:1px solid var(--line);padding:5px}
+.profile-gallery img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.profile-gallery button{width:100%;background:none;border:0;text-decoration:underline;padding:7px;font-size:12px}
+.profile-gallery figcaption{font-size:11px;text-align:center}
+.image-message{font-size:13px;margin:12px 0;line-height:1.5}
+.public-images{display:flex;gap:6px;overflow:auto;margin:0 0 14px}
+.public-images img{width:100px;height:90px;object-fit:cover;border:1px solid var(--line)}
+.post-open{font:inherit;text-transform:inherit;text-align:left;background:none;border:0;padding:0;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.hear-post{align-self:flex-start;margin:0 0 14px;font-size:13px}
+.community-columns{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:26px;align-items:start}
+.forum-column{background:var(--paper);border:1.5px solid var(--toner);padding:20px;min-width:0}
+.forum-column h3{font-family:var(--display);font-size:28px;margin:0;text-transform:uppercase}
+.forum-intro{font-size:13px;color:var(--toner-70);margin:8px 0 16px}
+.forum-list{display:grid;gap:14px;margin-top:18px}
+.forum-profile{padding:14px 0;border-top:1px dashed var(--line);overflow-wrap:anywhere}
+.forum-profile h4{font-family:var(--display);font-size:19px;margin:0 0 5px}
+.forum-profile p{font-size:13px;white-space:pre-wrap;margin:8px 0}
+.forum-meta{font-size:11px;color:var(--toner-70)}
+.forum-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.forum-feedback{padding:14px 0;border-bottom:1px dashed var(--line);overflow-wrap:anywhere}
+.forum-feedback p{white-space:pre-wrap;font-size:14px;margin:6px 0}
+@media(max-width:960px){.community-columns{grid-template-columns:1fr}.forum-column{grid-row:1}.forum-list{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}}
+.speech-player{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:90;width:min(560px,calc(100% - 24px));padding:14px;background:var(--paper);border:2px solid var(--toner);box-shadow:4px 5px 0 #17171a30}
+.speech-player[hidden]{display:none}
+.speech-player p{margin:0 0 10px;font-size:13px;overflow-wrap:anywhere}
+.speech-controls{display:flex;gap:10px;flex-wrap:wrap}
+body:has(.speech-player:not([hidden])){padding-bottom:160px}
+.av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+button:disabled{opacity:.55;cursor:wait}
 .acct-head .who{min-width:0}
 .acct-head b{display:block;font-family:var(--display);text-transform:uppercase;font-size:19px;line-height:1.1}
 .acct-head span{font-family:var(--mono);font-size:11.5px;color:var(--toner-70);word-break:break-all}
@@ -458,7 +488,19 @@ footer{border-top:1.5px solid var(--toner);background:var(--paper);padding:26px 
       <button id="sortNew" aria-pressed="true">Newest</button>
     </div>
   </div>
-  <div class="grid" id="grid"></div>
+  <div class="community-columns">
+    <div class="grid" id="grid"></div>
+    <aside class="forum-column" id="forum" aria-labelledby="forumHeading">
+      <h3 id="forumHeading">Forum</h3>
+      <p class="forum-intro">Music groups, bands, local businesses, and religious organizations: introduce yourself and hear from your community.</p>
+      <button class="submit" type="button" id="createForumProfile">Create a short profile</button>
+      <label for="forumCategory" style="margin-top:18px">Explore the community</label>
+      <select id="forumCategory"><option value="all">All organizations</option><option value="music_groups">Music Groups</option><option value="bands">Bands</option><option value="local_businesses">Local Businesses</option><option value="religious_organizations">Religious Organizations</option></select>
+      <p id="forumStatus" class="image-message" role="status" aria-live="polite">Loading community profiles…</p>
+      <div id="forumList" class="forum-list"></div>
+      <button class="chip" type="button" id="moreForumProfiles" hidden>More profiles</button>
+    </aside>
+  </div>
 </main>
 
 <footer>
@@ -470,6 +512,43 @@ footer{border-top:1.5px solid var(--toner);background:var(--paper);padding:26px 
   </div>
 </footer>
 
+<aside class="speech-player" id="speechPlayer" aria-label="Post audio player" hidden>
+  <p id="speechStatus" role="status" aria-live="polite"></p>
+  <div class="speech-controls">
+    <button class="chip" id="speechPause" type="button">Pause</button>
+    <button class="chip" id="speechResume" type="button" hidden>Resume</button>
+    <button class="chip" id="speechStop" type="button">Stop</button>
+  </div>
+</aside>
+
+<div class="veil" id="forumProfileVeil" role="dialog" aria-modal="true" aria-labelledby="forumProfileTitle">
+  <div class="sheet"><div class="sheet-head"><h3 id="forumProfileTitle">Create a Forum profile</h3><button class="x" data-close aria-label="Close">×</button></div>
+    <form class="sheet-body" id="forumProfileForm">
+      <label for="forumName">Group or organization name</label><input id="forumName" maxlength="80" required>
+      <label for="forumType">Category</label><select id="forumType" required><option value="music_groups">Music Groups</option><option value="bands">Bands</option><option value="local_businesses">Local Businesses</option><option value="religious_organizations">Religious Organizations</option></select>
+      <label for="forumArea">City or neighborhood</label><input id="forumArea" maxlength="100" placeholder="Fresno, CA" required>
+      <label for="forumBio">A short introduction</label><textarea id="forumBio" maxlength="500" placeholder="Tell the community who you are and what you do." required></textarea>
+      <p class="hint">Up to 500 characters. Your profile and community feedback are public. Create profiles only for organizations you represent.</p>
+      <p id="forumProfileStatus" role="status" aria-live="polite"></p><button class="submit" id="saveForumProfile" type="submit">Save profile</button>
+    </form>
+  </div>
+</div>
+<div class="veil" id="forumFeedbackVeil" role="dialog" aria-modal="true" aria-labelledby="forumFeedbackTitle">
+  <div class="sheet"><div class="sheet-head"><h3 id="forumFeedbackTitle">Community feedback</h3><button class="x" data-close aria-label="Close">×</button></div>
+    <div class="sheet-body">
+      <h4 id="forumSelectedName"></h4><p id="forumSelectedMeta" class="forum-meta"></p><p id="forumSelectedBio" style="white-space:pre-wrap;overflow-wrap:anywhere"></p>
+      <div id="forumFeedbackList"></div><p id="forumFeedbackStatus" role="status" aria-live="polite"></p><button class="chip" id="moreForumFeedback" type="button" hidden>More feedback</button>
+      <h4 class="sub">Share community feedback</h4>
+      <form id="forumFeedbackForm">
+        <label for="forumFeedbackName">Public display name</label><input id="forumFeedbackName" maxlength="64" required>
+        <label for="forumFeedbackBody">Your feedback</label><textarea id="forumFeedbackBody" maxlength="1000" placeholder="Share an experience, ask a question, or offer a constructive suggestion." required></textarea>
+        <p class="hint">Feedback is public. Keep it respectful and relevant. Avoid sharing private information.</p>
+        <button class="submit" id="submitForumFeedback" type="submit">Post feedback</button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- location -->
 <div class="veil" id="locVeil" role="dialog" aria-modal="true" aria-labelledby="locTitle">
   <div class="sheet">
@@ -477,6 +556,8 @@ footer{border-top:1.5px solid var(--toner);background:var(--paper);padding:26px 
     <div class="sheet-body">
       <label for="locInput">Neighborhood, town, or ZIP</label>
       <input id="locInput" placeholder="Riverside" autocomplete="off">
+      <button class="submit" id="useMyLocation" type="button">Use my current location</button>
+      <p class="image-message">Allow location to see distances in miles. Your viewing location stays in this browser session.</p>
       <div class="presets" id="presets"></div>
       <label for="radius">How far you'll travel</label>
       <select id="radius">
@@ -485,9 +566,16 @@ footer{border-top:1.5px solid var(--toner);background:var(--paper);padding:26px 
         <option value="6">Cross-town — 6 miles</option>
         <option value="99">Anywhere</option>
       </select>
-      <p class="hint">Saved as your default. The board opens here every time.</p>
+      <p class="hint">The neighborhood label and radius are saved. Distances require your current GPS location.</p>
       <button class="submit" id="saveLoc">Save location</button>
     </div>
+  </div>
+</div>
+
+<div class="veil" id="distanceVeil" role="dialog" aria-modal="true" aria-labelledby="distanceTitle">
+  <div class="sheet">
+    <div class="sheet-head"><h3 id="distanceTitle">Post distance</h3><button class="x" data-close aria-label="Close">×</button></div>
+    <div class="sheet-body"><h4 id="distancePostTitle"></h4><p id="distanceResult" role="status" aria-live="polite"></p><p class="image-message">Approximate straight-line distance, not driving distance. Post locations are supplied by their authors.</p><button class="submit" id="refreshDistance" type="button">Use my current location</button></div>
   </div>
 </div>
 
@@ -498,6 +586,9 @@ footer{border-top:1.5px solid var(--toner);background:var(--paper);padding:26px 
     <div class="sheet-body">
       <label for="pTitle">Headline</label>
       <input id="pTitle" placeholder="Bass amp, barely used" maxlength="46">
+      <button class="chip" id="tagPostLocation" type="button">Tag this post with my location</button>
+      <p id="postLocationStatus" class="image-message" role="status">No location added. Tag the post so visitors can see its distance.</p>
+      <p class="hint">Tag while at the business or post location. Shared coordinates are rounded to roughly 100 metres; your exact address is not requested.</p>
       <div class="two">
         <div><label for="pCat">Category</label><select id="pCat"></select></div>
         <div><label for="pArea">Neighborhood</label><select id="pArea"></select></div>
@@ -573,6 +664,15 @@ footer{border-top:1.5px solid var(--toner);background:var(--paper);padding:26px 
         <div><label for="prPhone">Default tab number</label><input id="prPhone" placeholder="555-0142"></div>
       </div>
       <button class="submit" id="saveProfile">Save profile</button>
+      <h4 class="sub">Profile images</h4>
+      <p class="image-message">Five images free. Upgrade to <b>up to 10 images total for $5 for 30 days</b>. One-time payment; no automatic renewal. Extra images stop displaying when the plan expires. Your first five slots stay free.</p>
+      <p id="imageStatus" class="image-message" role="status" aria-live="polite">Loading images…</p>
+      <div id="profileGallery" class="profile-gallery"></div>
+      <label for="profileImageFiles">Add images from your device</label>
+      <input type="file" id="profileImageFiles" accept="image/jpeg,image/png,image/webp" multiple>
+      <p class="hint">JPG, PNG, or WebP. Up to 5 MB each. Uploaded images appear with your flyers.</p>
+      <button class="submit" id="uploadProfileImages" type="button">Upload selected images</button>
+      <button class="signout" id="buyImagePass" type="button">Up to 10 images — $5 / 30 days</button>
       <h4 class="sub">Your flyers</h4>
       <div id="mineWrap"></div>
       <button class="signout" id="signOut">Sign out</button>
@@ -596,7 +696,7 @@ const TBL_FLYERS   = 'pp_flyers';
 
 /* Build stamp. One line in the console answers "which version is live?"
    without downloading anything or reading the source. */
-const BUILD = '2026-08-15 18:38 UTC';
+const BUILD = '2026-10-24 community forum';
 console.log(
   '%cpolepost%c build ' + BUILD +
   '  |  supabase: ' + (SUPABASE.url ? SUPABASE.url.replace('https://','').split('.')[0] : 'NOT CONFIGURED'),
@@ -658,16 +758,37 @@ let pending = null;
 const $ = s => document.querySelector(s);
 const grid = $('#grid');
 
-/* deterministic pseudo-coords for a typed place we don't know */
-function coordsFor(name){
-  const key = name.trim().toLowerCase();
-  for (const a in AREAS) if (a.toLowerCase() === key) return AREAS[a];
-  let h = 0; for (let i=0;i<key.length;i++) h = (h*31 + key.charCodeAt(i)) >>> 0;
-  return {x:((h%800)/100)-4, y:(((h>>9)%800)/100)-4};
+// Viewing GPS is intentionally kept in memory, never saved or sent to the backend.
+let viewerLocation=null,postLocation=null,distancePost=null,gpsRequest=null;
+function validCoordinates(p){return p&&Number.isFinite(p.latitude)&&Number.isFinite(p.longitude)&&Math.abs(p.latitude)<=90&&Math.abs(p.longitude)<=180;}
+function haversineMiles(a,b){
+  const rad=n=>n*Math.PI/180,dlat=rad(b.latitude-a.latitude),dlon=rad(b.longitude-a.longitude);
+  const h=Math.sin(dlat/2)**2+Math.cos(rad(a.latitude))*Math.cos(rad(b.latitude))*Math.sin(dlon/2)**2;
+  return 3958.7613*2*Math.asin(Math.sqrt(Math.min(1,Math.max(0,h))));
 }
-function milesTo(area){
-  const a = AREAS[area] || {x:0,y:0};
-  return Math.round(Math.hypot(a.x-prefs.x, a.y-prefs.y)*10)/10;
+function milesTo(post){return validCoordinates(viewerLocation)&&validCoordinates(post)?haversineMiles(viewerLocation,post):Infinity;}
+function distanceLabel(post){const d=milesTo(post);return Number.isFinite(d)?(d<0.1?'Less than 0.1 mile away':d.toFixed(1)+' miles away'):validCoordinates(post)?'Click to see distance':'Location not added';}
+function getGps(fresh=false){
+  if(!fresh&&viewerLocation&&Date.now()-viewerLocation.timestamp<120000)return Promise.resolve(viewerLocation);
+  if(gpsRequest)return gpsRequest;
+  gpsRequest=new Promise((resolve,reject)=>{
+    if(!navigator.geolocation){reject(Error('Location is unavailable in this browser.'));return;}
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const c={latitude:pos.coords.latitude,longitude:pos.coords.longitude,accuracy:pos.coords.accuracy,timestamp:Date.now()};
+      if(!validCoordinates(c)){reject(Error('Could not determine your location.'));return;}
+      viewerLocation=c;resolve(c);
+    },e=>reject(Error(e.code===1?'Location permission was denied. Allow location in browser settings, then try again.':e.code===3?'Location timed out. Please try again.':'Could not determine your location. Please try again.')),{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+  }).finally(()=>{gpsRequest=null;});
+  return gpsRequest;
+}
+async function showPostDistance(post,fresh=false){
+  distancePost=post;$('#distancePostTitle').textContent=post.title;openVeil('#distanceVeil');
+  const result=$('#distanceResult'),btn=$('#refreshDistance');btn.hidden=!validCoordinates(post);
+  if(!validCoordinates(post)){result.textContent='Location not added. The author needs to tag this post before its distance can be shown.';return;}
+  result.textContent='Getting your location…';btn.disabled=true;
+  try{const gps=await getGps(fresh);if(distancePost!==post)return;result.textContent=distanceLabel(post)+' · GPS accuracy about '+Math.round(gps.accuracy)+' metres.';render();}
+  catch(e){if(distancePost===post)result.textContent=e.message;}
+  finally{btn.disabled=false;}
 }
 function ago(h){
   if (h < 1) return 'just now';
@@ -746,10 +867,11 @@ function setUser(u, quiet){
   if (u && !was){
     if (!quiet) toast('Signed in as ' + u.email);
     closeVeil('#authVeil');
-    pullProfile().then(pullFlyers);
+    pullProfile().then(pullFlyers).then(checkImagePayment);
     if (pending){ const go = pending; pending = null; setTimeout(go, 250); }
   }
   if (!u && was) pullFlyers();
+  loadForum();
 }
 
 /* Rows from pp_flyers become the same shape the board already renders,
@@ -758,7 +880,8 @@ function fromRow(r){
   return {
     id: r.id, title: r.title, cat: r.category, area: r.area,
     price: r.price || 'Ask', body: r.body || 'No details given.',
-    phone: r.phone || '', taken: [], remote: true,
+    phone: r.phone || '', taken: [], remote: true, author:r.author,
+    latitude:r.latitude,longitude:r.longitude,location_accuracy_meters:r.location_accuracy_meters,
     mine: !!(user && r.author === user.id),
     hrs: Math.max(0, (Date.now() - new Date(r.created_at).getTime()) / 3600000)
   };
@@ -872,6 +995,7 @@ function renderAcct(){
   $('#prName').value = profile.name || '';
   $('#prArea').value = profile.area || Object.keys(AREAS)[0];
   $('#prPhone').value = profile.phone || '';
+  loadProfileImages();
 
   const mine = posts.filter(p => p.mine);
   const wrap = $('#mineWrap');
@@ -917,8 +1041,8 @@ function buildCats(){
 
 function visible(){
   let list = posts.filter(p => activeCat==='all' || p.cat===activeCat);
-  if (prefs.loc) list = list.filter(p => milesTo(p.area) <= prefs.radius);
-  list.sort((a,b) => sort==='new' ? a.hrs-b.hrs : milesTo(a.area)-milesTo(b.area));
+  if (viewerLocation&&prefs.radius!==99) list = list.filter(p => !validCoordinates(p)||milesTo(p)<=prefs.radius);
+  list.sort((a,b) => {if(sort==='new')return a.hrs-b.hrs;const da=milesTo(a),db=milesTo(b);return da===db?a.hrs-b.hrs:da-db;});
   return list;
 }
 
@@ -927,10 +1051,11 @@ function render(){
   const c = catOf(activeCat);
   $('#boardTitle').textContent = activeCat==='all' ? 'The board' : c.label;
   $('#boardCount').textContent = list.length + (list.length===1?' flyer':' flyers') +
-    (prefs.loc ? ' within ' + (prefs.radius===99?'any distance':prefs.radius+' mi') : '');
-  $('#hereLine').innerHTML = prefs.loc
-    ? 'Your corner: <b>'+prefs.loc+'</b> · '+(prefs.radius===99?'anywhere':prefs.radius+' mi')
-    : 'Showing <b>everywhere</b> — set a location to sort by distance';
+    (viewerLocation&&prefs.radius!==99?' · tagged posts within '+prefs.radius+' mi; unlocated posts also shown':'');
+  $('#hereLine').textContent = viewerLocation
+    ? 'Your current location · '+(prefs.radius===99?'anywhere':prefs.radius+' mile radius')
+    : prefs.loc ? 'Your corner: '+prefs.loc+' · enable location for distances'
+    : 'Showing everywhere — enable location to sort by distance';
   $('#locLabel').textContent = prefs.loc || 'Set your location';
 
   grid.innerHTML = '';
@@ -944,12 +1069,57 @@ function render(){
   list.forEach(p => grid.appendChild(card(p)));
 }
 
+/* ---------- hear posts: device text-to-speech, started only by a click ---------- */
+let spokenPost=null,spokenUtterance=null,speechGeneration=0,speechPaused=false;
+function speechAvailable(){return !!(window.speechSynthesis&&window.SpeechSynthesisUtterance);}
+function postSpeechText(post){
+  const parts=[post.title,catOf(post.cat).label,post.body,'Price: '+post.price,'Location: '+post.area];
+  const d=milesTo(post);
+  parts.push(Number.isFinite(d)?'Approximate straight-line distance: '+distanceLabel(post):validCoordinates(post)?'Click this post and allow location to see its distance.':'Location not added.');
+  return parts.filter(Boolean).join('. ');
+}
+function paintSpeechControls(){
+  $('#speechPlayer').hidden=!spokenPost;
+  $('#speechPause').hidden=speechPaused;$('#speechResume').hidden=!speechPaused;
+  if(spokenPost)$('#speechStatus').textContent=(speechPaused?'Paused: ':'Reading: ')+spokenPost.title;
+  document.querySelectorAll('.hear-post').forEach(btn=>{
+    const active=spokenPost&&btn.dataset.postId===String(spokenPost.id);
+    btn.setAttribute('aria-pressed',active?'true':'false');
+    btn.textContent=active?'🔊 Restart reading':'🔊 Hear this post';
+  });
+}
+function stopPostSpeech(){
+  speechGeneration++;spokenPost=null;spokenUtterance=null;speechPaused=false;
+  if(speechAvailable())window.speechSynthesis.cancel();
+  paintSpeechControls();
+}
+function hearPost(post){
+  if(!speechAvailable()){toast('Read aloud is unavailable in this browser.');return;}
+  stopPostSpeech();const generation=speechGeneration;
+  const utterance=new window.SpeechSynthesisUtterance(postSpeechText(post));
+  utterance.lang=post.lang||document.documentElement.lang||navigator.language||'en-US';
+  utterance.rate=1;utterance.pitch=1;
+  const voices=window.speechSynthesis.getVoices();
+  const language=utterance.lang.toLowerCase();
+  const voice=voices.find(v=>v.lang.toLowerCase()===language)||voices.find(v=>v.lang.toLowerCase().split('-')[0]===language.split('-')[0]);
+  if(voice)utterance.voice=voice;
+  spokenPost=post;spokenUtterance=utterance;
+  utterance.onend=()=>{if(generation===speechGeneration)stopPostSpeech();};
+  utterance.onerror=e=>{if(generation!==speechGeneration)return;stopPostSpeech();if(!['canceled','interrupted'].includes(e.error))toast('Could not read this post. Try again or check your device voice settings.');};
+  paintSpeechControls();
+  try{window.speechSynthesis.speak(utterance);}catch(e){stopPostSpeech();toast('Could not start reading. Please try again.');}
+}
+$('#speechPause').onclick=()=>{if(!spokenPost||!speechAvailable())return;window.speechSynthesis.pause();speechPaused=true;paintSpeechControls();};
+$('#speechResume').onclick=()=>{if(!spokenPost||!speechAvailable())return;window.speechSynthesis.resume();speechPaused=false;paintSpeechControls();};
+$('#speechStop').onclick=stopPostSpeech;
+window.addEventListener('pagehide',stopPostSpeech);
+/* ---------- end hear posts ---------- */
+
 function card(p){
   const c = catOf(p.cat);
   const el = document.createElement('article');
   el.className = 'card' + (p.fresh ? ' fresh' : '');
-  const dist = prefs.loc ? milesTo(p.area) + ' mi' : p.area;
-  const where = prefs.loc ? p.area + ' · ' + dist : p.area;
+  const where = p.area + ' · ' + distanceLabel(p);
 
   el.innerHTML =
     '<span class="tape" style="background:'+c.color+'"></span>'+
@@ -961,10 +1131,17 @@ function card(p){
     '<div class="rule"></div>'+
     '<div class="fringe"></div>';
 
-  el.querySelector('h4').textContent = p.title;
+  const open=document.createElement('button');open.type='button';open.className='post-open';open.textContent=p.title;open.setAttribute('aria-label','View distance for '+p.title);open.onclick=()=>showPostDistance(p);el.querySelector('h4').append(open);
+  el.addEventListener('click',e=>{if(!e.target.closest('button,a,input'))showPostDistance(p);});
   el.querySelector('.body').textContent = p.body;
   el.querySelector('.price').textContent = p.price;
   el.querySelector('.w').textContent = where;
+  const hear=document.createElement('button');hear.type='button';hear.className='chip hear-post';hear.dataset.postId=String(p.id);
+  const reading=spokenPost?.id===p.id;
+  hear.textContent=reading?'🔊 Restart reading':'🔊 Hear this post';hear.setAttribute('aria-pressed',reading?'true':'false');hear.setAttribute('aria-label','Hear this post: '+p.title);
+  hear.disabled=!speechAvailable();if(hear.disabled){hear.textContent='Read aloud unavailable';hear.title='This browser does not support built-in text-to-speech.';}
+  hear.onclick=()=>hearPost(p);el.querySelector('.body').after(hear);
+  if(p.author)showFlyerImages(p.author,el);
 
   const fringe = el.querySelector('.fringe');
   for (let i=0;i<6;i++){
@@ -1090,8 +1267,7 @@ $('#heroBrowse').onclick = ()=> $('#board').scrollIntoView({behavior:'smooth'});
 $('#saveLoc').onclick = ()=>{
   const v = $('#locInput').value.trim();
   if (!v){ toast('Type a neighborhood, town, or ZIP'); $('#locInput').focus(); return; }
-  const c = coordsFor(v);
-  prefs = {loc:v, x:c.x, y:c.y, radius:Number($('#radius').value)};
+  prefs = {loc:v, radius:Number($('#radius').value)};
   save('prefs', prefs);
   closeVeil('#locVeil');
   if (sort === 'new') setSort('near');
@@ -1106,7 +1282,8 @@ $('#savePost').onclick = async ()=>{
     id:'m'+Date.now(), title:t, cat:$('#pCat').value, area:$('#pArea').value,
     price:$('#pPrice').value.trim() || 'Ask', phone:$('#pPhone').value.trim() || '555-0100',
     body:$('#pBody').value.trim() || 'No details given.', hrs:0, taken:[], fresh:true, mine:true,
-    by: user ? user.email : null
+    by: user ? user.email : null,
+    latitude:postLocation?.latitude??null,longitude:postLocation?.longitude??null,location_accuracy_meters:postLocation?.accuracy??null
   };
 
   if (sb && user){
@@ -1114,7 +1291,8 @@ $('#savePost').onclick = async ()=>{
     btn.disabled = true; btn.textContent = 'Posting\u2026';
     const { data, error } = await sb.from(TBL_FLYERS).insert({
       author:user.id, title:p.title, category:p.cat, area:p.area,
-      price:p.price, body:p.body, phone:p.phone
+      price:p.price, body:p.body, phone:p.phone,
+      latitude:p.latitude,longitude:p.longitude,location_accuracy_meters:p.location_accuracy_meters
     }).select().single();
     btn.disabled = false; btn.textContent = 'Post a flyer';
     if (error){ toast("Couldn't post \u2014 " + error.message); return; }
@@ -1129,6 +1307,7 @@ $('#savePost').onclick = async ()=>{
   activeCat = p.cat; sort = 'new'; setSortButtons();
   buildCats(); render();
   ['#pTitle','#pPrice','#pPhone','#pBody'].forEach(s=>$(s).value='');
+  postLocation=null;$('#postLocationStatus').textContent='No location added. Tag the post so visitors can see its distance.';
   toast('Flyer posted in ' + p.area);
   $('#board').scrollIntoView({behavior:'smooth'});
 };
@@ -1141,8 +1320,18 @@ function setSortButtons(){
 function setSort(s){ sort = s; setSortButtons(); render(); }
 $('#sortNew').onclick = ()=>setSort('new');
 $('#sortNear').onclick = ()=>{
-  if (!prefs.loc){ openLoc(); toast('Set a location first'); return; }
+  if (!viewerLocation){ openLoc(); toast('Use your current location first'); return; }
   setSort('near');
+};
+
+$('#refreshDistance').onclick=()=>{if(distancePost)showPostDistance(distancePost,true);};
+$('#useMyLocation').onclick=async()=>{
+  const btn=$('#useMyLocation');btn.disabled=true;
+  try{await getGps(true);prefs.radius=Number($('#radius').value);save('prefs',{loc:prefs.loc,radius:prefs.radius});closeVeil('#locVeil');setSort('near');toast('Distances now use your current location');}catch(e){toast(e.message);}finally{btn.disabled=false;}
+};
+$('#tagPostLocation').onclick=async()=>{
+  const btn=$('#tagPostLocation');btn.disabled=true;
+  try{const gps=await getGps(true);postLocation={latitude:Math.round(gps.latitude*1000)/1000,longitude:Math.round(gps.longitude*1000)/1000,accuracy:Math.max(150,Math.ceil(gps.accuracy))};$('#postLocationStatus').textContent='Location tagged. Visitors can see the approximate distance to this post.';}catch(e){$('#postLocationStatus').textContent=e.message;}finally{btn.disabled=false;}
 };
 
 /* toast */
@@ -1154,6 +1343,187 @@ function toast(msg){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>t.classList.remove('up'), 2600);
 }
+
+/* ---------- profile image uploads and verified one-time payments ---------- */
+let imageState={images:[],limit:5,expires_at:null}, imageBusy=false;
+const publicImageCache=new Map();
+async function imageApi(name,body){
+  if(!sb)throw Error('Sign in to manage your images.');
+  const {data:{session}}=await sb.auth.getSession();
+  const headers={apikey:SUPABASE.anon,Authorization:'Bearer '+(session?.access_token||SUPABASE.anon)};
+  if(!(body instanceof FormData))headers['Content-Type']='application/json';
+  const res=await fetch(SUPABASE.url+'/functions/v1/'+name,{method:'POST',headers,body:body instanceof FormData?body:JSON.stringify(body)});
+  const data=await res.json();
+  if(!res.ok||data.error)throw Error(data.error||'Request failed. Please try again.');
+  return data;
+}
+async function loadProfileImages(){
+  if(!user||!sb)return;
+  const owner=user.id;
+  try{
+    const data=await imageApi('pp-images',{action:'gallery',user_id:owner});
+    if(user?.id!==owner)return;
+    imageState=data;
+    $('#imageStatus').textContent=data.images.length+' / '+data.limit+' slots used'+(data.expires_at?' · 10-image plan ends '+new Date(data.expires_at).toLocaleDateString():' · Five free slots');
+    $('#buyImagePass').hidden=!!data.expires_at;
+    if(!data.expires_at){
+      const payment=await fetch(SUPABASE.url+'/functions/v1/pp-image-billing').then(r=>r.json()).catch(()=>({ready:false}));
+      if(user?.id!==owner)return;
+      $('#buyImagePass').disabled=!payment.ready;
+      $('#buyImagePass').textContent=payment.ready?'Up to 10 images — $5 / 30 days':'$5 / 30 days upgrade — payment setup pending';
+    }
+    const gallery=$('#profileGallery');gallery.replaceChildren();
+    data.images.forEach(item=>{
+      const figure=document.createElement('figure');
+      if(item.url){const img=document.createElement('img');img.src=item.url;img.alt='Profile image '+item.slot;figure.append(img);}
+      const caption=document.createElement('figcaption');caption.textContent='Slot '+item.slot+(item.active?'':item.url?' · Expired':' · Incomplete');figure.append(caption);
+      const remove=document.createElement('button');remove.type='button';remove.textContent='Remove';
+      remove.onclick=async()=>{if(imageBusy)return;remove.disabled=true;try{await imageApi('pp-images',{action:'delete',id:item.id});publicImageCache.delete(owner);await loadProfileImages();render();}catch(e){toast(e.message);remove.disabled=false;}};
+      figure.append(remove);gallery.append(figure);
+    });
+    const first=data.images.find(i=>i.active&&i.url);
+    if(first){const img=document.createElement('img');img.src=first.url;img.alt='Your profile photo';$('#acctBigAv').replaceChildren(img);}
+  }catch(e){$('#imageStatus').textContent=e.message;}
+}
+$('#uploadProfileImages').onclick=async()=>{
+  if(imageBusy)return;
+  if(!user||!sb){toast('Sign in to upload images.');return;}
+  const files=Array.from($('#profileImageFiles').files);
+  if(!files.length){toast('Choose an image first.');return;}
+  if(files.some(f=>!['image/jpeg','image/png','image/webp'].includes(f.type)||f.size>5242880)){toast('Use JPG, PNG, or WebP images up to 5 MB each.');return;}
+  imageBusy=true;const btn=$('#uploadProfileImages');btn.disabled=true;
+  let count=0;
+  try{
+    const latest=await imageApi('pp-images',{action:'gallery',user_id:user.id});
+    const occupied=latest.images.filter(i=>i.slot<=latest.limit).length;
+    if(files.length>latest.limit-occupied)throw Error('Not enough image slots. Remove an image or upgrade to up to 10 images.');
+    for(const file of files){
+      btn.textContent='Uploading '+(count+1)+' of '+files.length+'…';
+      const form=new FormData();form.append('image',file);
+      await imageApi('pp-images',form);count++;
+    }
+    $('#profileImageFiles').value='';toast(count+' image'+(count===1?'':'s')+' uploaded');
+  }catch(e){toast((count?count+' uploaded. ':'')+e.message);}
+  finally{imageBusy=false;btn.disabled=false;btn.textContent='Upload selected images';publicImageCache.clear();await loadProfileImages();render();}
+};
+$('#buyImagePass').onclick=async()=>{
+  if(!user||!sb){toast('Sign in before purchasing.');return;}
+  const btn=$('#buyImagePass');btn.disabled=true;
+  try{const data=await imageApi('pp-image-billing',{action:'checkout'});location.assign(data.url);}
+  catch(e){toast(e.message);btn.disabled=false;}
+};
+async function checkImagePayment(){
+  const params=new URLSearchParams(location.search);
+  if(!params.has('image_payment'))return;
+  if(params.get('image_payment')==='cancelled'){toast('Payment cancelled. Your free images are still available.');return;}
+  if(!user||!params.get('session_id'))return;
+  try{
+    const data=await imageApi('pp-image-billing',{action:'confirm',session_id:params.get('session_id')});
+    if(!data.paid){toast('Payment is processing. Extra slots unlock after payment succeeds.');return;}
+    params.delete('image_payment');params.delete('session_id');history.replaceState(null,'',location.pathname+(params.size?'?'+params.toString():'')+location.hash);
+    publicImageCache.clear();toast('Payment verified. Up to 10 images unlocked for 30 days.');renderAcct();openVeil('#acctVeil');render();
+  }catch(e){toast(e.message);}
+}
+async function showFlyerImages(author,el){
+  try{
+    let cached=publicImageCache.get(author);
+    if(!cached||cached.until<Date.now()){
+      cached={until:Date.now()+45000,promise:imageApi('pp-images',{action:'gallery',user_id:author})};publicImageCache.set(author,cached);
+    }
+    const data=await cached.promise;
+    const imgs=data.images.filter(i=>i.active&&i.url);if(!imgs.length)return;
+    const gallery=document.createElement('div');gallery.className='public-images';gallery.setAttribute('aria-label','Images from this profile');
+    imgs.forEach(item=>{const link=document.createElement('a');link.href=item.url;link.target='_blank';link.rel='noopener';const img=document.createElement('img');img.src=item.url;img.alt='Image from flyer author';img.loading='lazy';link.append(img);gallery.append(link);});
+    el.querySelector('.body').before(gallery);
+    const remaining=data.expires_at?Date.parse(data.expires_at)-Date.now():Infinity;
+    if(remaining>0&&remaining<2147483647)setTimeout(()=>{gallery.remove();publicImageCache.delete(author);if(el.isConnected)showFlyerImages(author,el);},remaining+50);
+  }catch(e){publicImageCache.delete(author);}
+}
+
+/* ---------- community forum ---------- */
+const FORUM_TYPES={music_groups:'Music Groups',bands:'Bands',local_businesses:'Local Businesses',religious_organizations:'Religious Organizations'};
+let forumProfiles=[],forumOffset=0,forumRequest=0,forumEditing=null,forumSelected=null,feedbackOffset=0,feedbackRequest=0;
+function forumElement(tag,text,className){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el;}
+function openForumProfile(item=null){
+  requireAuth(()=>{
+    forumEditing=item;
+    $('#forumProfileTitle').textContent=item?'Edit Forum profile':'Create a Forum profile';
+    $('#forumName').value=item?.name||'';$('#forumType').value=item?.category||'music_groups';$('#forumArea').value=item?.area||'';$('#forumBio').value=item?.bio||'';
+    $('#forumProfileStatus').textContent='';openVeil('#forumProfileVeil');$('#forumName').focus();
+  });
+}
+function renderForum(){
+  const list=$('#forumList');list.replaceChildren();
+  for(const item of forumProfiles){
+    const card=forumElement('article',undefined,'forum-profile');
+    card.append(forumElement('h4',item.name),forumElement('span',FORUM_TYPES[item.category]+' · '+item.area,'forum-meta'),forumElement('p',item.bio));
+    const actions=forumElement('div',undefined,'forum-actions');
+    const feedback=forumElement('button','Community feedback','chip');feedback.type='button';feedback.onclick=()=>openForumFeedback(item);actions.append(feedback);
+    if(user?.id===item.owner_id){const edit=forumElement('button','Edit profile','chip');edit.type='button';edit.onclick=()=>openForumProfile(item);actions.append(edit);}
+    card.append(actions);list.append(card);
+  }
+}
+async function loadForum(more=false){
+  if(!sb){$('#forumStatus').textContent='Community profiles are temporarily unavailable. Please reload.';return;}
+  const request=++forumRequest;
+  if(!more){forumOffset=0;forumProfiles=[];renderForum();}
+  $('#forumStatus').textContent='Loading community profiles…';$('#moreForumProfiles').disabled=true;
+  try{
+    let q=sb.from('pp_forum_profiles').select('id,owner_id,name,category,area,bio,created_at').order('created_at',{ascending:false}).order('id').range(forumOffset,forumOffset+19);
+    if($('#forumCategory').value!=='all')q=q.eq('category',$('#forumCategory').value);
+    const {data,error}=await q;if(error)throw error;if(request!==forumRequest)return;
+    forumProfiles=more?forumProfiles.concat(data):data;forumOffset=forumProfiles.length;renderForum();
+    $('#forumStatus').textContent=forumProfiles.length?forumProfiles.length+' community profile'+(forumProfiles.length===1?'':'s'):'Be the first to introduce your group or organization.';
+    $('#moreForumProfiles').hidden=data.length<20;
+  }catch(e){if(request===forumRequest)$('#forumStatus').textContent='Could not load profiles. Please try again.';}
+  finally{if(request===forumRequest)$('#moreForumProfiles').disabled=false;}
+}
+$('#createForumProfile').onclick=()=>openForumProfile();$('#forumCategory').onchange=()=>loadForum();$('#moreForumProfiles').onclick=()=>loadForum(true);
+$('#forumProfileForm').onsubmit=async e=>{
+  e.preventDefault();if(!user?.id||!sb){openForumProfile(forumEditing);return;}
+  const values={name:$('#forumName').value.trim(),category:$('#forumType').value,area:$('#forumArea').value.trim(),bio:$('#forumBio').value.trim()};
+  if(!values.name||!values.area||!values.bio){$('#forumProfileStatus').textContent='Complete your name, location, and introduction.';return;}
+  const btn=$('#saveForumProfile');btn.disabled=true;$('#forumProfileStatus').textContent='Saving…';
+  try{
+    const q=forumEditing?sb.from('pp_forum_profiles').update(values).eq('id',forumEditing.id).eq('owner_id',user.id):sb.from('pp_forum_profiles').insert({...values,owner_id:user.id});
+    const {data,error}=await q.select('id').single();if(error||!data)throw error||Error('Profile not saved');
+    closeVeil('#forumProfileVeil');$('#forumCategory').value='all';await loadForum();toast('Forum profile saved');
+  }catch(e){$('#forumProfileStatus').textContent='Could not save your profile. Please try again.';}finally{btn.disabled=false;}
+};
+function openForumFeedback(item){
+  forumSelected=item;$('#forumSelectedName').textContent=item.name;$('#forumSelectedMeta').textContent=FORUM_TYPES[item.category]+' · '+item.area;$('#forumSelectedBio').textContent=item.bio;
+  $('#forumFeedbackName').value=profile.name||'';$('#forumFeedbackBody').value='';openVeil('#forumFeedbackVeil');loadForumFeedback();
+}
+async function loadForumFeedback(more=false){
+  if(!sb||!forumSelected)return;const selected=forumSelected.id,request=++feedbackRequest;
+  if(!more){feedbackOffset=0;$('#forumFeedbackList').replaceChildren();}
+  $('#forumFeedbackStatus').textContent='Loading feedback…';$('#moreForumFeedback').disabled=true;
+  try{
+    const {data,error}=await sb.from('pp_forum_feedback').select('id,profile_id,author_id,display_name,body,created_at').eq('profile_id',selected).order('created_at',{ascending:false}).order('id').range(feedbackOffset,feedbackOffset+19);
+    if(error)throw error;if(request!==feedbackRequest||forumSelected?.id!==selected)return;
+    for(const item of data){
+      const entry=forumElement('article',undefined,'forum-feedback');entry.append(forumElement('strong',item.display_name),forumElement('span',' · '+new Date(item.created_at).toLocaleDateString(),'forum-meta'),forumElement('p',item.body));
+      if(item.author_id===user?.id){const remove=forumElement('button','Remove my feedback','chip');remove.type='button';remove.onclick=async()=>{
+        remove.disabled=true;try{const {data:removed,error}=await sb.from('pp_forum_feedback').delete().eq('id',item.id).eq('author_id',user.id).select('id');if(error||!removed.length)throw error||Error('Not removed');if(forumSelected?.id===selected)await loadForumFeedback();}catch(e){toast('Could not remove feedback.');remove.disabled=false;}
+      };entry.append(remove);}
+      $('#forumFeedbackList').append(entry);
+    }
+    feedbackOffset+=data.length;$('#forumFeedbackStatus').textContent=feedbackOffset?'':'No feedback yet. Start the conversation.';$('#moreForumFeedback').hidden=data.length<20;
+  }catch(e){if(request===feedbackRequest)$('#forumFeedbackStatus').textContent='Could not load feedback. Please try again.';}finally{if(request===feedbackRequest)$('#moreForumFeedback').disabled=false;}
+}
+$('#moreForumFeedback').onclick=()=>loadForumFeedback(true);
+async function submitForumFeedback(){
+  if(!sb||!user?.id||!forumSelected)return;
+  const selected=forumSelected.id,name=$('#forumFeedbackName').value.trim(),body=$('#forumFeedbackBody').value.trim();
+  if(!name||!body){$('#forumFeedbackStatus').textContent='Add your display name and feedback.';return;}
+  const btn=$('#submitForumFeedback');btn.disabled=true;$('#forumFeedbackStatus').textContent='Posting…';
+  try{
+    const {error}=await sb.from('pp_forum_feedback').insert({profile_id:selected,author_id:user.id,display_name:name,body});if(error)throw error;
+    if(forumSelected?.id===selected){$('#forumFeedbackBody').value='';await loadForumFeedback();}toast('Feedback posted');
+  }catch(e){$('#forumFeedbackStatus').textContent='Could not post feedback. Please try again.';}finally{btn.disabled=false;}
+}
+$('#forumFeedbackForm').onsubmit=e=>{e.preventDefault();requireAuth(submitForumFeedback);};
+/* ---------- end community forum ---------- */
 
 /* ---------- boot ---------- */
 (function fillSelects(){
@@ -1177,6 +1547,7 @@ function toast(msg){
   setSortButtons();
   render();
   pullFlyers();
+  loadForum();
 })();
 
 /* hero: one tab tears itself off, once */
@@ -1189,3 +1560,4 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
 </script>
 </body>
 </html>
+
