@@ -421,6 +421,9 @@ button:disabled{opacity:.55;cursor:wait}
   font-size:14px;font-weight:500;margin-top:26px;
 }
 .signout:hover{background:var(--toner);color:var(--paper)}
+.bar-in{height:auto;min-height:60px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+.strip{top:var(--bar-height,60px)}
+#languageToggle{font-size:12px;padding:7px 10px}
 
 @media(prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
@@ -436,6 +439,7 @@ button:disabled{opacity:.55;cursor:wait}
     <button class="chip hide-s" id="tabsBtn">Your tabs <span class="count" id="tabCount">0</span></button>
     <button class="chip" id="acctBtn"><span class="av" id="acctAv" hidden></span><span id="acctLabel">Sign in</span></button>
     <button class="chip solid" id="postBtn">Post a flyer</button>
+    <button class="chip" id="languageToggle" type="button" aria-label="Switch to Spanish" translate="no">Español</button>
   </div>
 </header>
 
@@ -683,6 +687,7 @@ button:disabled{opacity:.55;cursor:wait}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="i18n.js"></script>
 <script>
 /* The publishable key is meant to ship in client code. It grants only what
    the row-level security policies on pp_profiles and pp_flyers allow, which
@@ -1073,9 +1078,10 @@ function render(){
 let spokenPost=null,spokenUtterance=null,speechGeneration=0,speechPaused=false;
 function speechAvailable(){return !!(window.speechSynthesis&&window.SpeechSynthesisUtterance);}
 function postSpeechText(post){
-  const parts=[post.title,catOf(post.cat).label,post.body,'Price: '+post.price,'Location: '+post.area];
+  const tr=window.PolepostI18n.translate;
+  const parts=[post.title,tr(catOf(post.cat).label),post.body,tr('Price: ')+post.price,tr('Location: ')+post.area];
   const d=milesTo(post);
-  parts.push(Number.isFinite(d)?'Approximate straight-line distance: '+distanceLabel(post):validCoordinates(post)?'Click this post and allow location to see its distance.':'Location not added.');
+  parts.push(tr(Number.isFinite(d)?'Approximate straight-line distance: '+distanceLabel(post):validCoordinates(post)?'Click this post and allow location to see its distance.':'Location not added.'));
   return parts.filter(Boolean).join('. ');
 }
 function paintSpeechControls(){
@@ -1097,7 +1103,7 @@ function hearPost(post){
   if(!speechAvailable()){toast('Read aloud is unavailable in this browser.');return;}
   stopPostSpeech();const generation=speechGeneration;
   const utterance=new window.SpeechSynthesisUtterance(postSpeechText(post));
-  utterance.lang=post.lang||document.documentElement.lang||navigator.language||'en-US';
+  utterance.lang=post.lang||(document.documentElement.lang==='es'?'es-MX':'en-US');
   utterance.rate=1;utterance.pitch=1;
   const voices=window.speechSynthesis.getVoices();
   const language=utterance.lang.toLowerCase();
