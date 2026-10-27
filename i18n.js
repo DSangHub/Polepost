@@ -2,6 +2,28 @@
 (() => {
   'use strict';
   const dictionary = {
+    'Religious Organizations':'Organizaciones religiosas',
+    'Post your ads at no charge with verification. Post a Call to Prayer so your viewers can listen to the prayer.':'Publica tus anuncios sin costo con verificación. Publica un llamado a la oración para que tus visitantes puedan escucharla.',
+    'Request organization verification':'Solicitar verificación de la organización','Post a free ad':'Publicar un anuncio gratis','Post a Call to Prayer':'Publicar un llamado a la oración',
+    'Verification confirms the organization and its authorized representative. Ads and prayers are free after approval.':'La verificación confirma la organización y a su representante autorizado. Los anuncios y las oraciones son gratis después de la aprobación.',
+    'Loading organization posts…':'Cargando publicaciones de organizaciones…','More organization posts':'Más publicaciones de organizaciones','Organization verification':'Verificación de la organización',
+    'Organization name':'Nombre de la organización','Official website or public organization page':'Sitio oficial o página pública de la organización','Authorized representative':'Representante autorizado','Organization contact email':'Correo de contacto de la organización','How can we confirm your role?':'¿Cómo podemos confirmar tu cargo?',
+    'Link to the staff directory or explain how we can verify your authorization.':'Añade un enlace al directorio del personal o explica cómo podemos verificar tu autorización.',
+    'Requests are reviewed manually. Representative details and verification notes are private. Approved organization names, locations, websites, ads, and prayers are public.':'Las solicitudes se revisan manualmente. Los datos del representante y las notas de verificación son privados. Los nombres, ubicaciones, sitios web, anuncios y oraciones de las organizaciones aprobadas son públicos.',
+    'Submit for verification':'Enviar para verificación','Verified organization':'Organización verificada','Title':'Título','Ad content':'Contenido del anuncio','Prayer text':'Texto de la oración','Reading language':'Idioma de lectura',
+    "Up to 2,000 characters. Prayers are read aloud using the visitor's device voice. No payment is required.":'Hasta 2,000 caracteres. Las oraciones se leen con la voz del dispositivo del visitante. No se requiere pago.',
+    'Publish at no charge':'Publicar sin costo','Your verification request is awaiting manual review.':'Tu solicitud de verificación está pendiente de revisión manual.',
+    'Your organization has been approved. You can post free ads and prayers.':'Tu organización ha sido aprobada. Puedes publicar anuncios y oraciones gratis.',
+    'Verification was not approved. Review your organization details and submit a new request.':'No se aprobó la verificación. Revisa los datos de tu organización y envía una nueva solicitud.',
+    'Could not load verification status.':'No se pudo cargar el estado de verificación.','Submitting verification request…':'Enviando solicitud de verificación…',
+    'You already have a verification request awaiting review.':'Ya tienes una solicitud de verificación pendiente de revisión.','Verification request submitted for manual review.':'Solicitud de verificación enviada para revisión manual.',
+    'Could not submit verification. Check your details and official website link.':'No se pudo enviar la solicitud. Revisa los datos y el enlace al sitio oficial.',
+    'Organization verification is required before publishing free ads or prayers.':'La organización debe estar verificada antes de publicar anuncios u oraciones gratis.',
+    'Could not load your verified organizations. Please try again.':'No se pudieron cargar tus organizaciones verificadas. Inténtalo de nuevo.','Sign in to publish.':'Inicia sesión para publicar.','Add a title and content.':'Añade un título y contenido.','Publishing…':'Publicando…','Published at no charge.':'Publicado sin costo.',
+    'Could not publish. Your organization must have current verification.':'No se pudo publicar. Tu organización debe tener una verificación vigente.',
+    'Organization posts are temporarily unavailable.':'Las publicaciones de organizaciones no están disponibles por el momento.','Call to Prayer':'Llamado a la oración','Community ad':'Anuncio comunitario','🔊 Listen to Prayer':'🔊 Escuchar la oración','Remove my post':'Eliminar mi publicación','Could not remove this post.':'No se pudo eliminar esta publicación.',
+    'No ads or prayers yet. Verified organizations can be the first to post.':'Aún no hay anuncios ni oraciones. Las organizaciones verificadas pueden ser las primeras en publicar.',
+    'Could not load organization posts. Please try again.':'No se pudieron cargar las publicaciones. Inténtalo de nuevo.',
     'Riverside · posted today':'Riverside · publicado hoy','Drummer wanted':'Se busca baterista','Weds nights':'Miércoles por la noche',
     'Loud, patient, owns a kick pedal. Practice space off 9th. Beer covered.':'Con energía, paciencia y pedal propio. Local de ensayo cerca de la calle 9. Bebidas incluidas.',
     'This build has no Supabase keys, so nothing was emailed and nothing is verified. The button below fakes the tap-through so you can walk the flow.':'Esta versión no tiene claves de Supabase. No se envió ningún correo ni se verificó nada. El botón siguiente simula el acceso para probar el proceso.',
@@ -107,7 +129,7 @@
   }
   const originals=new WeakMap(),attributes=new WeakMap();
   // Keep names, introductions, comments, titles, prices, email addresses and inputs untouched.
-  const excluded='script,style,[translate="no"],.post-open,.card .body,.card .price,.forum-profile h4,.forum-profile p,.forum-feedback strong,.forum-feedback p,#forumSelectedName,#forumSelectedBio,#distancePostTitle,#acctName,#acctEmail,#acctAv,#acctBigAv,#sentTo,.mine .t b,.tablist .t b,.tablist .num,#presets,#pArea,#prArea';
+  const excluded='script,style,[translate="no"],.post-open,.card .body,.card .price,.forum-profile h4,.forum-profile p,.forum-feedback strong,.forum-feedback p,.religious-title,.religious-name,.religious-area,.religious-content,#religiousOrgChoice,#forumSelectedName,#forumSelectedBio,#distancePostTitle,#acctName,#acctEmail,#acctAv,#acctBigAv,#sentTo,.mine .t b,.tablist .t b,.tablist .num,#presets,#pArea,#prArea';
   let observer;
   function apply(){
     if(observer)observer.disconnect();

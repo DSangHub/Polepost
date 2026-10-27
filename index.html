@@ -383,6 +383,11 @@ footer{border-top:1.5px solid var(--toner);background:var(--paper);padding:26px 
 .post-open{font:inherit;text-transform:inherit;text-align:left;background:none;border:0;padding:0;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
 .hear-post{align-self:flex-start;margin:0 0 14px;font-size:13px}
 .community-columns{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:26px;align-items:start}
+.community-sidebars{display:flex;flex-direction:column;gap:24px;min-width:0}
+.religious-post{border-top:1px dashed var(--line);padding:15px 0;overflow-wrap:anywhere}
+.religious-post h4{font-family:var(--display);font-size:20px;margin:8px 0}
+.religious-content{font-size:13px;white-space:pre-wrap;max-height:240px;overflow:auto;margin:10px 0}
+.religious-badge{display:inline-block;background:#e7f4df;color:#245025;padding:3px 8px;font-size:11px;border-radius:12px}
 .forum-column{background:var(--paper);border:1.5px solid var(--toner);padding:20px;min-width:0}
 .forum-column h3{font-family:var(--display);font-size:28px;margin:0;text-transform:uppercase}
 .forum-intro{font-size:13px;color:var(--toner-70);margin:8px 0 16px}
@@ -394,7 +399,7 @@ footer{border-top:1.5px solid var(--toner);background:var(--paper);padding:26px 
 .forum-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .forum-feedback{padding:14px 0;border-bottom:1px dashed var(--line);overflow-wrap:anywhere}
 .forum-feedback p{white-space:pre-wrap;font-size:14px;margin:6px 0}
-@media(max-width:960px){.community-columns{grid-template-columns:1fr}.forum-column{grid-row:1}.forum-list{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}}
+@media(max-width:960px){.community-columns{grid-template-columns:1fr}.community-sidebars{grid-row:1}.forum-list{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}}
 .speech-player{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:90;width:min(560px,calc(100% - 24px));padding:14px;background:var(--paper);border:2px solid var(--toner);box-shadow:4px 5px 0 #17171a30}
 .speech-player[hidden]{display:none}
 .speech-player p{margin:0 0 10px;font-size:13px;overflow-wrap:anywhere}
@@ -494,6 +499,17 @@ button:disabled{opacity:.55;cursor:wait}
   </div>
   <div class="community-columns">
     <div class="grid" id="grid"></div>
+    <div class="community-sidebars">
+    <aside class="forum-column" id="religiousOrganizations" aria-labelledby="religiousHeading">
+      <h3 id="religiousHeading">Religious Organizations</h3>
+      <p class="forum-intro">Post your ads at no charge with verification. Post a Call to Prayer so your viewers can listen to the prayer.</p>
+      <button class="submit" id="religiousVerify" type="button">Request organization verification</button>
+      <div class="forum-actions"><button class="chip" id="religiousCreateAd" type="button">Post a free ad</button><button class="chip" id="religiousCreatePrayer" type="button">Post a Call to Prayer</button></div>
+      <p class="image-message">Verification confirms the organization and its authorized representative. Ads and prayers are free after approval.</p>
+      <p id="religiousAccountStatus" class="image-message" role="status"></p>
+      <p id="religiousStatus" class="image-message" role="status" aria-live="polite">Loading organization posts…</p>
+      <div id="religiousList"></div><button class="chip" id="moreReligiousPosts" type="button" hidden>More organization posts</button>
+    </aside>
     <aside class="forum-column" id="forum" aria-labelledby="forumHeading">
       <h3 id="forumHeading">Forum</h3>
       <p class="forum-intro">Music groups, bands, local businesses, and religious organizations: introduce yourself and hear from your community.</p>
@@ -504,6 +520,7 @@ button:disabled{opacity:.55;cursor:wait}
       <div id="forumList" class="forum-list"></div>
       <button class="chip" type="button" id="moreForumProfiles" hidden>More profiles</button>
     </aside>
+    </div>
   </div>
 </main>
 
@@ -524,6 +541,33 @@ button:disabled{opacity:.55;cursor:wait}
     <button class="chip" id="speechStop" type="button">Stop</button>
   </div>
 </aside>
+
+<div class="veil" id="religiousVerifyVeil" role="dialog" aria-modal="true" aria-labelledby="religiousVerifyTitle">
+  <div class="sheet"><div class="sheet-head"><h3 id="religiousVerifyTitle">Organization verification</h3><button class="x" data-close aria-label="Close">×</button></div>
+    <form class="sheet-body" id="religiousVerifyForm">
+      <label for="religiousName">Organization name</label><input id="religiousName" maxlength="80" required>
+      <label for="religiousArea">City or neighborhood</label><input id="religiousArea" maxlength="100" required>
+      <label for="religiousWebsite">Official website or public organization page</label><input id="religiousWebsite" type="url" maxlength="500" placeholder="https://" required>
+      <label for="religiousRepresentative">Authorized representative</label><input id="religiousRepresentative" maxlength="100" required>
+      <label for="religiousEmail">Organization contact email</label><input id="religiousEmail" type="email" maxlength="254" required>
+      <label for="religiousEvidence">How can we confirm your role?</label><textarea id="religiousEvidence" maxlength="1000" placeholder="Link to the staff directory or explain how we can verify your authorization." required></textarea>
+      <p class="hint">Requests are reviewed manually. Representative details and verification notes are private. Approved organization names, locations, websites, ads, and prayers are public.</p>
+      <p id="religiousVerifyStatus" role="status" aria-live="polite"></p><button class="submit" id="religiousSubmitVerification" type="submit">Submit for verification</button>
+    </form>
+  </div>
+</div>
+<div class="veil" id="religiousPublishVeil" role="dialog" aria-modal="true" aria-labelledby="religiousPublishTitle">
+  <div class="sheet"><div class="sheet-head"><h3 id="religiousPublishTitle">Post a free ad</h3><button class="x" data-close aria-label="Close">×</button></div>
+    <form class="sheet-body" id="religiousPublishForm">
+      <label for="religiousOrgChoice">Verified organization</label><select id="religiousOrgChoice" required></select>
+      <label for="religiousPostTitle">Title</label><input id="religiousPostTitle" maxlength="80" required>
+      <label for="religiousPostBody" id="religiousBodyLabel">Ad content</label><textarea id="religiousPostBody" maxlength="2000" required></textarea>
+      <label for="religiousPostLanguage">Reading language</label><select id="religiousPostLanguage"><option value="en-US">English</option><option value="es-MX">Español</option></select>
+      <p class="hint">Up to 2,000 characters. Prayers are read aloud using the visitor's device voice. No payment is required.</p>
+      <p id="religiousPublishStatus" role="status" aria-live="polite"></p><button class="submit" id="religiousPublish" type="submit">Publish at no charge</button>
+    </form>
+  </div>
+</div>
 
 <div class="veil" id="forumProfileVeil" role="dialog" aria-modal="true" aria-labelledby="forumProfileTitle">
   <div class="sheet"><div class="sheet-head"><h3 id="forumProfileTitle">Create a Forum profile</h3><button class="x" data-close aria-label="Close">×</button></div>
@@ -877,6 +921,7 @@ function setUser(u, quiet){
   }
   if (!u && was) pullFlyers();
   loadForum();
+  loadReligiousPosts();loadReligiousAccount();
 }
 
 /* Rows from pp_flyers become the same shape the board already renders,
@@ -1078,6 +1123,7 @@ function render(){
 let spokenPost=null,spokenUtterance=null,speechGeneration=0,speechPaused=false;
 function speechAvailable(){return !!(window.speechSynthesis&&window.SpeechSynthesisUtterance);}
 function postSpeechText(post){
+  if(post.prayer)return [post.title,post.organization,post.body].filter(Boolean).join('. ');
   const tr=window.PolepostI18n.translate;
   const parts=[post.title,tr(catOf(post.cat).label),post.body,tr('Price: ')+post.price,tr('Location: ')+post.area];
   const d=milesTo(post);
@@ -1531,6 +1577,81 @@ async function submitForumFeedback(){
 $('#forumFeedbackForm').onsubmit=e=>{e.preventDefault();requireAuth(submitForumFeedback);};
 /* ---------- end community forum ---------- */
 
+/* ---------- verified religious organizations ---------- */
+let religiousOffset=0,religiousRequest=0,religiousKind='ad',religiousAccountRequest=0;
+async function loadReligiousAccount(){
+  const version=++religiousAccountRequest;$('#religiousAccountStatus').textContent='';
+  if(!sb||!user?.id)return;const owner=user.id;
+  try{
+    const {data,error}=await sb.from('pp_religious_requests').select('status,review_note').eq('owner_id',owner).order('created_at',{ascending:false}).limit(1);
+    if(error)throw error;if(version!==religiousAccountRequest||user?.id!==owner)return;
+    if(data[0]?.status==='pending')$('#religiousAccountStatus').textContent='Your verification request is awaiting manual review.';
+    if(data[0]?.status==='approved')$('#religiousAccountStatus').textContent='Your organization has been approved. You can post free ads and prayers.';
+    if(data[0]?.status==='rejected')$('#religiousAccountStatus').textContent='Verification was not approved. Review your organization details and submit a new request.';
+  }catch(e){if(version===religiousAccountRequest)$('#religiousAccountStatus').textContent='Could not load verification status.';}
+}
+function openReligiousVerification(){requireAuth(()=>{
+  $('#religiousEmail').value=user?.email||'';$('#religiousVerifyStatus').textContent='';openVeil('#religiousVerifyVeil');$('#religiousName').focus();
+});}
+$('#religiousVerify').onclick=openReligiousVerification;
+$('#religiousVerifyForm').onsubmit=async e=>{
+  e.preventDefault();if(!sb||!user?.id){openReligiousVerification();return;}
+  const btn=$('#religiousSubmitVerification');btn.disabled=true;$('#religiousVerifyStatus').textContent='Submitting verification request…';
+  try{
+    const website=$('#religiousWebsite').value.trim();const url=new URL(website);if(!['https:','http:'].includes(url.protocol))throw Error('website');
+    const {error}=await sb.from('pp_religious_requests').insert({owner_id:user.id,name:$('#religiousName').value.trim(),area:$('#religiousArea').value.trim(),website,representative:$('#religiousRepresentative').value.trim(),contact_email:$('#religiousEmail').value.trim(),evidence:$('#religiousEvidence').value.trim()});
+    if(error){if(error.code==='23505'){$('#religiousVerifyStatus').textContent='You already have a verification request awaiting review.';return;}throw error;}
+    closeVeil('#religiousVerifyVeil');$('#religiousVerifyForm').reset();await loadReligiousAccount();toast('Verification request submitted for manual review.');
+  }catch(e){$('#religiousVerifyStatus').textContent='Could not submit verification. Check your details and official website link.';}finally{btn.disabled=false;}
+};
+function openReligiousPublish(kind){requireAuth(async()=>{
+  if(!sb||!user?.id)return;religiousKind=kind;
+  try{
+    const {data,error}=await sb.from('pp_religious_orgs').select('id,name').eq('owner_id',user.id).eq('verified',true).order('name');if(error)throw error;
+    if(!data.length){toast('Organization verification is required before publishing free ads or prayers.');openReligiousVerification();return;}
+    $('#religiousOrgChoice').replaceChildren();for(const org of data){const option=document.createElement('option');option.value=org.id;option.textContent=org.name;$('#religiousOrgChoice').append(option);}
+    $('#religiousPublishTitle').textContent=kind==='prayer'?'Post a Call to Prayer':'Post a free ad';$('#religiousBodyLabel').textContent=kind==='prayer'?'Prayer text':'Ad content';
+    $('#religiousPostTitle').value='';$('#religiousPostBody').value='';$('#religiousPostLanguage').value=document.documentElement.lang==='es'?'es-MX':'en-US';$('#religiousPublishStatus').textContent='';openVeil('#religiousPublishVeil');
+  }catch(e){toast('Could not load your verified organizations. Please try again.');}
+});}
+$('#religiousCreateAd').onclick=()=>openReligiousPublish('ad');$('#religiousCreatePrayer').onclick=()=>openReligiousPublish('prayer');
+$('#religiousPublishForm').onsubmit=async e=>{
+  e.preventDefault();if(!sb||!user?.id){toast('Sign in to publish.');return;}
+  const title=$('#religiousPostTitle').value.trim(),body=$('#religiousPostBody').value.trim();
+  if(!title||!body){$('#religiousPublishStatus').textContent='Add a title and content.';return;}
+  const btn=$('#religiousPublish');btn.disabled=true;$('#religiousPublishStatus').textContent='Publishing…';
+  try{
+    const {error}=await sb.from('pp_religious_posts').insert({org_id:$('#religiousOrgChoice').value,kind:religiousKind,title,body,language:$('#religiousPostLanguage').value});if(error)throw error;
+    closeVeil('#religiousPublishVeil');await loadReligiousPosts();toast('Published at no charge.');
+  }catch(e){$('#religiousPublishStatus').textContent='Could not publish. Your organization must have current verification.';}finally{btn.disabled=false;}
+};
+async function loadReligiousPosts(more=false){
+  if(!sb){$('#religiousStatus').textContent='Organization posts are temporarily unavailable.';return;}
+  const version=++religiousRequest;if(!more){religiousOffset=0;$('#religiousList').replaceChildren();}
+  $('#religiousStatus').textContent='Loading organization posts…';$('#moreReligiousPosts').disabled=true;
+  try{
+    const {data,error}=await sb.from('pp_religious_posts').select('id,kind,title,body,language,created_at,organization:pp_religious_orgs(name,area,owner_id)').order('created_at',{ascending:false}).order('id').range(religiousOffset,religiousOffset+19);
+    if(error)throw error;if(version!==religiousRequest)return;
+    for(const post of data){
+      const org=post.organization;if(!org)continue;
+      const article=forumElement('article',undefined,'religious-post');
+      article.append(forumElement('span','Verified organization','religious-badge'),forumElement('h4',post.title,'religious-title'),forumElement('strong',org.name,'religious-name'),forumElement('p',org.area,'religious-area'),forumElement('p',post.kind==='prayer'?'Call to Prayer':'Community ad','forum-meta'),forumElement('div',post.body,'religious-content'));
+      if(post.kind==='prayer'){
+        const listen=forumElement('button','🔊 Listen to Prayer','chip');listen.type='button';listen.disabled=!speechAvailable();
+        if(listen.disabled){listen.textContent='Read aloud unavailable';listen.title='This browser does not support built-in text-to-speech.';}
+        listen.onclick=()=>hearPost({id:'prayer-'+post.id,title:post.title,body:post.body,organization:org.name,lang:post.language,prayer:true});article.append(listen);
+      }
+      if(user?.id===org.owner_id){const remove=forumElement('button','Remove my post','chip');remove.type='button';remove.onclick=async()=>{
+        remove.disabled=true;try{const {data:removed,error}=await sb.from('pp_religious_posts').delete().eq('id',post.id).select('id');if(error||!removed.length)throw error||Error('not removed');if(spokenPost?.id==='prayer-'+post.id)stopPostSpeech();await loadReligiousPosts();}catch(e){toast('Could not remove this post.');remove.disabled=false;}
+      };article.append(remove);}
+      $('#religiousList').append(article);
+    }
+    religiousOffset+=data.length;$('#religiousStatus').textContent=religiousOffset?'':'No ads or prayers yet. Verified organizations can be the first to post.';$('#moreReligiousPosts').hidden=data.length<20;
+  }catch(e){if(version===religiousRequest)$('#religiousStatus').textContent='Could not load organization posts. Please try again.';}finally{if(version===religiousRequest)$('#moreReligiousPosts').disabled=false;}
+}
+$('#moreReligiousPosts').onclick=()=>loadReligiousPosts(true);
+/* ---------- end religious organizations ---------- */
+
 /* ---------- boot ---------- */
 (function fillSelects(){
   $('#pCat').innerHTML = CATS.map(c=>'<option value="'+c.id+'">'+c.label+'</option>').join('');
@@ -1554,6 +1675,7 @@ $('#forumFeedbackForm').onsubmit=e=>{e.preventDefault();requireAuth(submitForumF
   render();
   pullFlyers();
   loadForum();
+  loadReligiousPosts();loadReligiousAccount();
 })();
 
 /* hero: one tab tears itself off, once */
