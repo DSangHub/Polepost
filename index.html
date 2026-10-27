@@ -387,6 +387,7 @@ footer{border-top:1.5px solid var(--toner);background:var(--paper);padding:26px 
 .religious-post{border-top:1px dashed var(--line);padding:15px 0;overflow-wrap:anywhere}
 .religious-post h4{font-family:var(--display);font-size:20px;margin:8px 0}
 .religious-content{font-size:13px;white-space:pre-wrap;max-height:240px;overflow:auto;margin:10px 0}
+.community-ad-image{width:100%;height:auto;display:block;margin:4px 0 14px;border:1px solid var(--line)}
 .religious-badge{display:inline-block;background:#e7f4df;color:#245025;padding:3px 8px;font-size:11px;border-radius:12px}
 .forum-column{background:var(--paper);border:1.5px solid var(--toner);padding:20px;min-width:0}
 .forum-column h3{font-family:var(--display);font-size:28px;margin:0;text-transform:uppercase}
@@ -795,6 +796,7 @@ let SEED = [
 
 /* ---------- state ---------- */
 let posts = SEED.slice();
+let communityAds=[],communityAdRequest=0;
 let prefs = {loc:null, x:0, y:0, radius:3};
 let tabs = [];
 let activeCat = 'all';
@@ -922,6 +924,7 @@ function setUser(u, quiet){
   if (!u && was) pullFlyers();
   loadForum();
   loadReligiousPosts();loadReligiousAccount();
+  loadCommunityAds();
 }
 
 /* Rows from pp_flyers become the same shape the board already renders,
@@ -1090,9 +1093,10 @@ function buildCats(){
 }
 
 function visible(){
-  let list = posts.filter(p => activeCat==='all' || p.cat===activeCat);
+  const zip=selectedPostalCode();
+  let list = posts.concat(communityAds.filter(p=>p.zip===zip&&Date.parse(p.expires_at)>Date.now())).filter(p => activeCat==='all' || p.cat===activeCat);
   if (viewerLocation&&prefs.radius!==99) list = list.filter(p => !validCoordinates(p)||milesTo(p)<=prefs.radius);
-  list.sort((a,b) => {if(sort==='new')return a.hrs-b.hrs;const da=milesTo(a),db=milesTo(b);return da===db?a.hrs-b.hrs:da-db;});
+  list.sort((a,b) => {if(!!a.notice!==!!b.notice)return a.notice?-1:1;if(sort==='new')return a.hrs-b.hrs;const da=milesTo(a),db=milesTo(b);return da===db?a.hrs-b.hrs:da-db;});
   return list;
 }
 
@@ -1186,6 +1190,11 @@ function card(p){
   const open=document.createElement('button');open.type='button';open.className='post-open';open.textContent=p.title;open.setAttribute('aria-label','View distance for '+p.title);open.onclick=()=>showPostDistance(p);el.querySelector('h4').append(open);
   el.addEventListener('click',e=>{if(!e.target.closest('button,a,input'))showPostDistance(p);});
   el.querySelector('.body').textContent = p.body;
+  if(p.notice){
+    el.id='community-ad-'+p.zip;
+    const image=document.createElement('img');image.className='community-ad-image';image.src=p.image;image.alt=p.title+' '+p.body;image.loading='lazy';
+    el.querySelector('.body').before(image);
+  }
   el.querySelector('.price').textContent = p.price;
   el.querySelector('.w').textContent = where;
   const hear=document.createElement('button');hear.type='button';hear.className='chip hear-post';hear.dataset.postId=String(p.id);
@@ -1196,7 +1205,7 @@ function card(p){
   if(p.author)showFlyerImages(p.author,el);
 
   const fringe = el.querySelector('.fringe');
-  for (let i=0;i<6;i++){
+  for (let i=0;i<(p.notice?0:6);i++){
     const t = document.createElement('button');
     t.className = 'tab' + (p.taken.includes(i) ? ' gone' : '');
     t.textContent = p.phone;
@@ -1325,6 +1334,7 @@ $('#saveLoc').onclick = ()=>{
   if (sort === 'new') setSort('near');
   render();
   toast('Location saved — ' + v);
+  loadCommunityAds();
 };
 
 $('#savePost').onclick = async ()=>{
@@ -1652,6 +1662,20 @@ async function loadReligiousPosts(more=false){
 $('#moreReligiousPosts').onclick=()=>loadReligiousPosts(true);
 /* ---------- end religious organizations ---------- */
 
+/* ---------- ZIP-targeted site community notices ---------- */
+function selectedPostalCode(){
+  const match=String(prefs.loc||'').match(/\b(\d{5})(?:-\d{4})?\b/);return match?match[1]:null;
+}
+async function loadCommunityAds(){
+  const request=++communityAdRequest,zip=selectedPostalCode();communityAds=[];
+  if(!sb||!zip){render();return;}
+  try{
+    const {data,error}=await sb.from('pp_community_ads').select('id,zip_code,title,body,image_path,created_at,expires_at').eq('zip_code',zip).gt('expires_at',new Date().toISOString()).order('created_at',{ascending:false});
+    if(error)throw error;if(request!==communityAdRequest||selectedPostalCode()!==zip)return;
+    communityAds=data.filter(row=>/^\/assets\/[A-Za-z0-9._-]+$/.test(row.image_path)).map(row=>({id:row.id,zip:row.zip_code,title:row.title,body:row.body,image:row.image_path,area:row.zip_code,cat:'services',price:'',phone:'',taken:[],notice:true,expires_at:row.expires_at,hrs:Math.max(0,(Date.now()-Date.parse(row.created_at))/3600000)}));
+    render();
+  }catch(e){console.warn('Community ads could not load');}
+}
 /* ---------- boot ---------- */
 (function fillSelects(){
   $('#pCat').innerHTML = CATS.map(c=>'<option value="'+c.id+'">'+c.label+'</option>').join('');
@@ -1667,6 +1691,8 @@ $('#moreReligiousPosts').onclick=()=>loadReligiousPosts(true);
 (function boot(){
   $('#buildTag').textContent = 'build ' + BUILD + (SUPABASE.url ? '' : ' \u00b7 not configured');
   load();
+  const postal=new URLSearchParams(location.search).get('zip');
+  if(postal&&/^\d{5}$/.test(postal)){prefs.loc=postal;prefs.radius=99;save('prefs',{loc:postal,radius:99});}
   initAuth();
   paintAcct();
   buildCats();
@@ -1676,6 +1702,7 @@ $('#moreReligiousPosts').onclick=()=>loadReligiousPosts(true);
   pullFlyers();
   loadForum();
   loadReligiousPosts();loadReligiousAccount();
+  loadCommunityAds();
 })();
 
 /* hero: one tab tears itself off, once */
