@@ -465,6 +465,7 @@ button:disabled{opacity:.55;cursor:wait}
       <div class="hero-cta">
         <button class="btn-big" id="heroLoc">Set your location</button>
         <button class="btn-line" id="heroBrowse">Browse the board</button>
+        <button class="btn-line" id="businessProfileBtn">Create a business profile</button>
       </div>
     </div>
 
@@ -729,14 +730,15 @@ button:disabled{opacity:.55;cursor:wait}
         <span class="av" id="acctBigAv"></span>
         <div class="who"><b id="acctName"></b><span id="acctEmail"></span></div>
       </div>
-      <h4 class="sub">Profile</h4>
-      <label for="prName">Name on your flyers</label>
-      <input id="prName" placeholder="Dana R." maxlength="32">
+      <h4 class="sub">Business profile</h4>
+      <label for="prName">Business name</label>
+      <input id="prName" autocomplete="organization" placeholder="Your business or organization" maxlength="32">
       <div class="two">
-        <div><label for="prArea">Home neighborhood</label><select id="prArea"></select></div>
-        <div><label for="prPhone">Default tab number</label><input id="prPhone" placeholder="555-0142"></div>
+        <div><label for="prArea">Business neighborhood</label><select id="prArea"></select></div>
+        <div><label for="prPhone">Business phone (optional)</label><input id="prPhone" type="tel" autocomplete="tel" maxlength="24" placeholder="(209) 555-0123"></div>
       </div>
       <button class="submit" id="saveProfile">Save profile</button>
+      <button class="chip" id="profilePostBtn" type="button" hidden>Open post template</button>
       <h4 class="sub">Profile images</h4>
       <p class="image-message">Five images free. Upgrade to <b>up to 10 images total for $5 for 30 days</b>. One-time payment; no automatic renewal. Extra images stop displaying when the plan expires. Your first five slots stay free.</p>
       <p id="imageStatus" class="image-message" role="status" aria-live="polite">Loading images…</p>
@@ -829,6 +831,9 @@ let user = null;
 let profile = {name:'', area:'', phone:''};
 let sb = null;
 let pending = null;
+let profileReady = Promise.resolve(true);
+let authBusinessIntent = null;
+let continueToPost = false;
 
 const $ = s => document.querySelector(s);
 const grid = $('#grid');
@@ -892,7 +897,10 @@ function load(){
   if (!usingDb && Array.isArray(m)) posts = m.concat(posts);
   const k = read('taken') || {};
   posts.forEach(p => { if (Array.isArray(k[p.id])) p.taken = k[p.id]; });
-  const pr = read('profile'); if (pr) profile = Object.assign(profile, pr);
+  if (!usingDb) {
+    const pr = read('profile');
+    if (pr) profile = Object.assign(profile, pr);
+  }
 }
 
 /* ---------- accounts ----------
@@ -909,11 +917,13 @@ function load(){
 let authState = 'nokeys';
 
 function startClient(){
-  sb = window.supabase.createClient(SUPABASE.url, SUPABASE.anon);
+  sb = window.supabase.createClient(SUPABASE.url, SUPABASE.anon, {
+    auth: {persistSession: true, autoRefreshToken: true}
+  });
   authState = 'live';
   sb.auth.getSession().then(({data}) => setUser(data && data.session ? data.session.user : null, true));
   sb.auth.onAuthStateChange((evt, session) => {
-    setUser(session ? session.user : null, evt !== 'SIGNED_IN');
+    setTimeout(() => setUser(session ? session.user : null, evt !== 'SIGNED_IN'), 0);
   });
   resetAuth();
 }
@@ -938,12 +948,32 @@ function setUser(u, quiet){
   const was = user;
   user = u;
   if (!sb) save('user', u);
+  const accountChanged = (was?.id || was?.email) !== (u?.id || u?.email);
+  if (sb && accountChanged) {
+    profile = {name:'', area:'', phone:''};
+    profileReady = u ? pullProfile() : Promise.resolve(true);
+    if (was) {
+      closeVeil('#acctVeil');
+      closeVeil('#postVeil');
+      $('#pTitle').value = '';
+      $('#pPhone').value = '';
+    }
+  }
   paintAcct();
-  if (u && !was){
+  if (u && accountChanged){
     if (!quiet) toast('Signed in as ' + u.email);
     closeVeil('#authVeil');
-    pullProfile().then(pullFlyers).then(checkImagePayment);
-    if (pending){ const go = pending; pending = null; setTimeout(go, 250); }
+    profileReady.then(pullFlyers).then(checkImagePayment);
+    const intent = read('business-intent');
+    const matches = intent && intent.expires > Date.now() &&
+      intent.email === u.email.toLowerCase();
+    const go = matches && intent.action === 'profile' ? openBusinessProfile :
+      matches && intent.action === 'post' ? requirePost : pending;
+    pending = null;
+    if (intent) save('business-intent', null);
+    if (go) profileReady.then(() => {
+      if ((user?.id || user?.email) === (u.id || u.email)) go();
+    });
   }
   if (!u && was) pullFlyers();
   loadForum();
@@ -982,17 +1012,21 @@ async function pullFlyers(){
 }
 
 async function pullProfile(){
-  if (!sb || !user) return;
+  if (!sb || !user) return true;
+  const owner = user.id;
   try{
-    const { data } = await sb.from(TBL_PROFILES)
-      .select('name,area,phone').eq('id', user.id).maybeSingle();
+    const { data, error } = await sb.from(TBL_PROFILES)
+      .select('name,area,phone').eq('id', owner).maybeSingle();
+    if (error || user?.id !== owner) return false;
     if (data) profile = {name:data.name||'', area:data.area||'', phone:data.phone||''};
     paintAcct();
-  }catch(e){}
+    return true;
+  }catch(e){ return false; }
 }
 
 function paintAcct(){
   const label = $('#acctLabel'), av = $('#acctAv');
+  $('#businessProfileBtn').hidden = !!(user && profile.name);
   if (user){
     const name = profile.name || user.email.split('@')[0];
     label.textContent = name.length > 14 ? name.slice(0,14) + '\u2026' : name;
@@ -1026,7 +1060,8 @@ function paintAuthState(){
   }
 }
 
-function openAuth(msg){
+function openAuth(msg, intent = null){
+  authBusinessIntent = intent;
   resetAuth();
   openVeil('#authVeil');
   if (msg) toast(msg);
@@ -1038,7 +1073,39 @@ function requireAuth(then){
   pending = then;
   openAuth('Sign in to post a flyer');
 }
-function requirePost(){ requireAuth(openPost); }
+async function requirePost(){
+  if (!user) {
+    pending = requirePost;
+    openAuth('Sign in to open the post template.', 'post');
+    return;
+  }
+  const owner = user.id || user.email;
+  const loaded = await profileReady;
+  if ((user?.id || user?.email) !== owner) return;
+  if (loaded && !profile.name) {
+    showBusinessProfile(true);
+    return;
+  }
+  openPost();
+}
+
+function showBusinessProfile(openTemplateAfterSave = false){
+  continueToPost = openTemplateAfterSave;
+  renderAcct();
+  openVeil('#acctVeil');
+  $('#prName').focus();
+}
+
+async function openBusinessProfile(){
+  if (!user) {
+    pending = openBusinessProfile;
+    openAuth('Sign in to create your business profile.', 'profile');
+    return;
+  }
+  const owner = user.id || user.email;
+  await profileReady;
+  if ((user?.id || user?.email) === owner) showBusinessProfile(!profile.name);
+}
 
 function validEmail(e){ return /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(e); }
 
@@ -1047,6 +1114,7 @@ async function sendLink(){
   const email = $('#authEmail').value.trim();
   if (!validEmail(email)){ toast("That email doesn't look right"); $('#authEmail').focus(); return; }
   const btn = $('#sendLink');
+  const intent = authBusinessIntent;
   btn.disabled = true; btn.textContent = 'Sending\u2026';
   try{
     if (sb){
@@ -1054,6 +1122,9 @@ async function sendLink(){
         email, options:{ emailRedirectTo: location.origin }
       });
       if (error){ toast(error.message); return; }
+      save('business-intent', intent ? {
+        action: intent, email: email.toLowerCase(), expires: Date.now() + 60 * 60 * 1000
+      } : null);
     }
     $('#sentTo').textContent = email;
     $('#authStep1').hidden = true;
@@ -1073,6 +1144,7 @@ function renderAcct(){
   $('#prName').value = profile.name || '';
   $('#prArea').value = profile.area || Object.keys(AREAS)[0];
   $('#prPhone').value = profile.phone || '';
+  $('#profilePostBtn').hidden = !profile.name;
   loadProfileImages();
 
   const mine = posts.filter(p => p.mine);
@@ -1327,9 +1399,10 @@ function openVeil(id){ $(id).classList.add('open'); }
 function closeVeil(id){ $(id).classList.remove('open'); }
 function openPost(){
   openVeil('#postVeil');
-  if (profile.phone && !$('#pPhone').value) $('#pPhone').value = profile.phone;
+  if (profile.name && !$('#pTitle').value) $('#pTitle').value = profile.name;
+  if (profile.phone && dialNumber(profile.phone) && !$('#pPhone').value) $('#pPhone').value = profile.phone;
   if (profile.area) $('#pArea').value = profile.area;
-  setTimeout(()=>$('#pTitle').focus(), 40);
+  setTimeout(()=>($('#pTitle').value ? $('#pBody') : $('#pTitle')).focus(), 40);
 }
 document.querySelectorAll('[data-close]').forEach(b=>{
   b.onclick = () => b.closest('.veil').classList.remove('open');
@@ -1359,7 +1432,12 @@ $('#heroLoc').onclick = openLoc;
 $('#tabsBtn').onclick = ()=>{ renderTabs(); openVeil('#tabVeil'); };
 $('#postBtn').onclick = requirePost;
 $('#footPost').onclick = e => { e.preventDefault(); requirePost(); };
-$('#acctBtn').onclick = ()=>{ if (user){ renderAcct(); openVeil('#acctVeil'); } else { openAuth(); } };
+$('#acctBtn').onclick = () => {
+  if (user) openBusinessProfile();
+  else { pending = null; openAuth(); }
+};
+$('#businessProfileBtn').onclick = openBusinessProfile;
+$('#profilePostBtn').onclick = () => { closeVeil('#acctVeil'); requirePost(); };
 $('#sendLink').onclick = sendLink;
 $('#resend').onclick = sendLink;
 $('#otherEmail').onclick = ()=>{ resetAuth(); $('#authEmail').select(); $('#authEmail').focus(); };
@@ -1367,22 +1445,51 @@ $('#demoIn').onclick = ()=>{
   if (authState !== 'nokeys'){ toast('Demo sign-in is disabled on this build'); return; }
   setUser({email: $('#sentTo').textContent});
 };
-$('#saveProfile').onclick = async ()=>{
-  profile = {name:$('#prName').value.trim(), area:$('#prArea').value, phone:$('#prPhone').value.trim()};
-  save('profile', profile);
-  paintAcct(); renderAcct();
-  if (sb && user){
-    const { error } = await sb.from(TBL_PROFILES)
-      .upsert({id:user.id, name:profile.name, area:profile.area,
-               phone:profile.phone, updated_at:new Date().toISOString()});
-    if (error){ toast("Couldn't save profile \u2014 " + error.message); return; }
+$('#saveProfile').onclick = async () => {
+  if (!user) return;
+  const next = {name:$('#prName').value.trim(), area:$('#prArea').value, phone:$('#prPhone').value.trim()};
+  if (!next.name) { toast('Enter your business name.'); $('#prName').focus(); return; }
+  if (next.phone && !dialNumber(next.phone)) {
+    toast('Enter a full phone number with area code.');
+    $('#prPhone').focus();
+    return;
   }
-  toast('Profile saved');
+  const owner = user.id || user.email;
+  const button = $('#saveProfile');
+  button.disabled = true;
+  try {
+    if (sb) {
+      const { error } = await sb.from(TBL_PROFILES).upsert({
+        id:owner, ...next, updated_at:new Date().toISOString()
+      });
+      if (error) throw error;
+    }
+    if ((user?.id || user?.email) !== owner) return;
+    profile = next;
+    profileReady = Promise.resolve(true);
+    if (!sb) save('profile', profile);
+    paintAcct();
+    renderAcct();
+    toast('Profile saved');
+    if (continueToPost) {
+      continueToPost = false;
+      closeVeil('#acctVeil');
+      openPost();
+    }
+  } catch (error) {
+    toast("Couldn't save profile — " + error.message);
+  } finally {
+    button.disabled = false;
+  }
 };
 $('#signOut').onclick = async ()=>{
-  if (sb) await sb.auth.signOut();
+  if (sb) {
+    const { error } = await sb.auth.signOut();
+    if (error) { toast(error.message); return; }
+  }
   setUser(null);
   save('user', null);
+  save('business-intent', null);
   closeVeil('#acctVeil');
   toast('Signed out');
 };

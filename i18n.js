@@ -2,6 +2,13 @@
 (() => {
   'use strict';
   const dictionary = {
+    "Create a business profile":"Crear un perfil de negocio",
+    "Business profile":"Perfil del negocio",
+    "Business neighborhood":"Vecindario del negocio",
+    "Business phone (optional)":"Teléfono del negocio (opcional)",
+    "Open post template":"Abrir plantilla de publicación",
+    "Sign in to open the post template.":"Inicia sesión para abrir la plantilla de publicación.",
+    "Sign in to create your business profile.":"Inicia sesión para crear el perfil de tu negocio.",
     "Business name":"Nombre del negocio",
     "Your business or organization":"Tu negocio u organización",
     "Phone for details (optional)":"Teléfono para más información (opcional)",
