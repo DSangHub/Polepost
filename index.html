@@ -387,6 +387,13 @@ footer{border-top:1.5px solid var(--toner);background:var(--paper);padding:26px 
 .religious-post{border-top:1px dashed var(--line);padding:15px 0;overflow-wrap:anywhere}
 .religious-post h4{font-family:var(--display);font-size:20px;margin:8px 0}
 .religious-content{font-size:13px;white-space:pre-wrap;max-height:240px;overflow:auto;margin:10px 0}
+.offer-fields{margin:0 0 16px;padding:12px;border:1px solid var(--line);min-width:0}
+.offer-days{display:flex;flex-wrap:wrap;gap:6px 12px;margin:8px 0 14px}
+.offer-days label{display:inline-flex;align-items:center;gap:5px;min-height:36px;margin:0}
+.offer-days input{width:auto;margin:0}
+.offer-fields .hint{margin:0}
+.offer-schedule{margin:0 0 12px;font-size:13px}
+.call-details{display:inline-flex;align-items:center;align-self:flex-start;min-height:44px;margin:0 0 12px;text-decoration:none}
 .community-ad-image{width:100%;height:auto;display:block;margin:4px 0 14px;border:1px solid var(--line)}
 .religious-badge{display:inline-block;background:#e7f4df;color:#245025;padding:3px 8px;font-size:11px;border-radius:12px}
 .forum-column{background:var(--paper);border:1.5px solid var(--toner);padding:20px;min-width:0}
@@ -632,9 +639,9 @@ button:disabled{opacity:.55;cursor:wait}
 <div class="veil" id="postVeil" role="dialog" aria-modal="true" aria-labelledby="postTitle">
   <div class="sheet">
     <div class="sheet-head"><h3 id="postTitle">Post a flyer</h3><button class="x" data-close aria-label="Close">×</button></div>
-    <div class="sheet-body">
-      <label for="pTitle">Headline</label>
-      <input id="pTitle" placeholder="Bass amp, barely used" maxlength="46">
+    <form class="sheet-body" id="postForm">
+      <label for="pTitle">Business name</label>
+      <input id="pTitle" autocomplete="organization" placeholder="Your business or organization" maxlength="46">
       <button class="chip" id="tagPostLocation" type="button">Tag this post with my location</button>
       <p id="postLocationStatus" class="image-message" role="status">No location added. Tag the post so visitors can see its distance.</p>
       <p class="hint">Tag while at the business or post location. Shared coordinates are rounded to roughly 100 metres; your exact address is not requested.</p>
@@ -644,12 +651,29 @@ button:disabled{opacity:.55;cursor:wait}
       </div>
       <div class="two">
         <div><label for="pPrice">Price or rate</label><input id="pPrice" placeholder="$180 or Free"></div>
-        <div><label for="pPhone">Number on the tabs</label><input id="pPhone" placeholder="555-0142"></div>
+        <div><label for="pPhone">Phone for details (optional)</label><input id="pPhone" type="tel" autocomplete="tel" maxlength="24" placeholder="(209) 555-0123"></div>
       </div>
-      <label for="pBody">The details</label>
-      <textarea id="pBody" placeholder="What it is, when you're around, anything a neighbor should know." maxlength="220"></textarea>
-      <button class="submit" id="savePost">Post a flyer</button>
-    </div>
+      <label for="pBody">Post content</label>
+      <textarea id="pBody" placeholder="Describe your offer, announcement, or job opening." maxlength="220"></textarea>
+      <fieldset class="offer-fields">
+        <legend>Offer days and hours (optional)</legend>
+        <div id="pOfferDays" class="offer-days">
+          <label><input type="checkbox" value="1"> <span>Mon</span></label>
+          <label><input type="checkbox" value="2"> <span>Tue</span></label>
+          <label><input type="checkbox" value="3"> <span>Wed</span></label>
+          <label><input type="checkbox" value="4"> <span>Thu</span></label>
+          <label><input type="checkbox" value="5"> <span>Fri</span></label>
+          <label><input type="checkbox" value="6"> <span>Sat</span></label>
+          <label><input type="checkbox" value="7"> <span>Sun</span></label>
+        </div>
+        <div class="two">
+          <div><label for="pStart">Starts at</label><input id="pStart" type="time"></div>
+          <div><label for="pEnd">Ends at</label><input id="pEnd" type="time"></div>
+        </div>
+        <p class="hint">Leave days or hours blank if they do not apply. Times are local to the business.</p>
+      </fieldset>
+      <button class="submit" id="savePost" type="submit">Post a flyer</button>
+    </form>
   </div>
 </div>
 
@@ -934,6 +958,7 @@ function fromRow(r){
     id: r.id, title: r.title, cat: r.category, area: r.area,
     price: r.price || 'Ask', body: r.body || 'No details given.',
     phone: r.phone || '', taken: [], remote: true, author:r.author,
+    offerDays:r.offer_days, offerStart:r.offer_starts_at, offerEnd:r.offer_ends_at,
     latitude:r.latitude,longitude:r.longitude,location_accuracy_meters:r.location_accuracy_meters,
     mine: !!(user && r.author === user.id),
     hrs: Math.max(0, (Date.now() - new Date(r.created_at).getTime()) / 3600000)
@@ -1171,6 +1196,18 @@ $('#speechStop').onclick=stopPostSpeech;
 window.addEventListener('pagehide',stopPostSpeech);
 /* ---------- end hear posts ---------- */
 
+const OFFER_DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function dialNumber(value) {
+  const number = String(value || '').trim().replace(/[ ().-]/g, '');
+  return /^(?:\+\d{8,15}|1?\d{10})$/.test(number) ? number : '';
+}
+
+function displayOfferTime(value) {
+  const [hour, minute] = value.split(':').map(Number);
+  return (hour % 12 || 12) + ':' + String(minute).padStart(2, '0') + (hour < 12 ? ' AM' : ' PM');
+}
+
 function card(p){
   const c = catOf(p.cat);
   const el = document.createElement('article');
@@ -1202,10 +1239,36 @@ function card(p){
   hear.textContent=reading?'🔊 Restart reading':'🔊 Hear this post';hear.setAttribute('aria-pressed',reading?'true':'false');hear.setAttribute('aria-label','Hear this post: '+p.title);
   hear.disabled=!speechAvailable();if(hear.disabled){hear.textContent='Read aloud unavailable';hear.title='This browser does not support built-in text-to-speech.';}
   hear.onclick=()=>hearPost(p);el.querySelector('.body').after(hear);
+  const days = (p.offerDays || []).map(day => OFFER_DAY_LABELS[day - 1]).filter(Boolean);
+  if (days.length || (p.offerStart && p.offerEnd)) {
+    const schedule = document.createElement('p');
+    schedule.className = 'offer-schedule';
+    days.forEach((day, index) => {
+      if (index) schedule.append(', ');
+      const label = document.createElement('span');
+      label.textContent = day;
+      schedule.append(label);
+    });
+    if (p.offerStart && p.offerEnd) {
+      if (days.length) schedule.append(' · ');
+      schedule.append(displayOfferTime(p.offerStart) + '–' + displayOfferTime(p.offerEnd));
+    }
+    hear.before(schedule);
+  }
+  const number = dialNumber(p.phone);
+  if (number) {
+    const call = document.createElement('a');
+    call.className = 'chip call-details';
+    call.href = 'tel:' + number;
+    const label = document.createElement('span');
+    label.textContent = 'Call for details';
+    call.append(label, ' · ' + p.phone);
+    hear.before(call);
+  }
   if(p.author)showFlyerImages(p.author,el);
 
   const fringe = el.querySelector('.fringe');
-  for (let i=0;i<(p.notice?0:6);i++){
+  for (let i=0;i<(p.notice || !p.phone ? 0 : 6);i++){
     const t = document.createElement('button');
     t.className = 'tab' + (p.taken.includes(i) ? ' gone' : '');
     t.textContent = p.phone;
@@ -1337,13 +1400,31 @@ $('#saveLoc').onclick = ()=>{
   loadCommunityAds();
 };
 
-$('#savePost').onclick = async ()=>{
+$('#postForm').onsubmit = async event => {
+  event.preventDefault();
+  if ($('#savePost').disabled) return;
   const t = $('#pTitle').value.trim();
-  if (!t){ toast('Give the flyer a headline'); $('#pTitle').focus(); return; }
+  if (!t){ toast('Enter your business name.'); $('#pTitle').focus(); return; }
+  const body = $('#pBody').value.trim();
+  if (!body){ toast('Enter your post content.'); $('#pBody').focus(); return; }
+  const phone = $('#pPhone').value.trim();
+  if (phone && !dialNumber(phone)){
+    toast('Enter a full phone number with area code.');
+    $('#pPhone').focus();
+    return;
+  }
+  const offerDays = Array.from(document.querySelectorAll('#pOfferDays input:checked'), input => Number(input.value));
+  const offerStart = $('#pStart').value;
+  const offerEnd = $('#pEnd').value;
+  if ((offerStart || offerEnd) && (!offerStart || !offerEnd || offerStart >= offerEnd)){
+    toast('Choose a start time and a later end time on the same day.');
+    $('#pStart').focus();
+    return;
+  }
   const p = {
     id:'m'+Date.now(), title:t, cat:$('#pCat').value, area:$('#pArea').value,
-    price:$('#pPrice').value.trim() || 'Ask', phone:$('#pPhone').value.trim() || '555-0100',
-    body:$('#pBody').value.trim() || 'No details given.', hrs:0, taken:[], fresh:true, mine:true,
+    price:$('#pPrice').value.trim() || 'Ask', phone,
+    body, offerDays, offerStart, offerEnd, hrs:0, taken:[], fresh:true, mine:true,
     by: user ? user.email : null,
     latitude:postLocation?.latitude??null,longitude:postLocation?.longitude??null,location_accuracy_meters:postLocation?.accuracy??null
   };
@@ -1353,7 +1434,9 @@ $('#savePost').onclick = async ()=>{
     btn.disabled = true; btn.textContent = 'Posting\u2026';
     const { data, error } = await sb.from(TBL_FLYERS).insert({
       author:user.id, title:p.title, category:p.cat, area:p.area,
-      price:p.price, body:p.body, phone:p.phone,
+      price:p.price, body:p.body, phone:p.phone || null,
+      offer_days:p.offerDays.length ? p.offerDays : null,
+      offer_starts_at:p.offerStart || null, offer_ends_at:p.offerEnd || null,
       latitude:p.latitude,longitude:p.longitude,location_accuracy_meters:p.location_accuracy_meters
     }).select().single();
     btn.disabled = false; btn.textContent = 'Post a flyer';
@@ -1368,7 +1451,8 @@ $('#savePost').onclick = async ()=>{
   closeVeil('#postVeil');
   activeCat = p.cat; sort = 'new'; setSortButtons();
   buildCats(); render();
-  ['#pTitle','#pPrice','#pPhone','#pBody'].forEach(s=>$(s).value='');
+  ['#pTitle','#pPrice','#pPhone','#pBody','#pStart','#pEnd'].forEach(s=>$(s).value='');
+  document.querySelectorAll('#pOfferDays input').forEach(input => { input.checked = false; });
   postLocation=null;$('#postLocationStatus').textContent='No location added. Tag the post so visitors can see its distance.';
   toast('Flyer posted in ' + p.area);
   $('#board').scrollIntoView({behavior:'smooth'});
