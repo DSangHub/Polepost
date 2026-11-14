@@ -395,6 +395,7 @@ footer{border-top:1.5px solid var(--toner);background:var(--paper);padding:26px 
 .offer-schedule{margin:0 0 12px;font-size:13px}
 .call-details{display:inline-flex;align-items:center;align-self:flex-start;min-height:44px;margin:0 0 12px;text-decoration:none}
 .community-ad-image{width:100%;height:auto;display:block;margin:4px 0 14px;border:1px solid var(--line)}
+.card .body a{color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:2px}
 .religious-badge{display:inline-block;background:#e7f4df;color:#245025;padding:3px 8px;font-size:11px;border-radius:12px}
 .forum-column{background:var(--paper);border:1.5px solid var(--toner);padding:20px;min-width:0}
 .forum-column h3{font-family:var(--display);font-size:28px;margin:0;text-transform:uppercase}
@@ -1280,6 +1281,22 @@ function displayOfferTime(value) {
   return (hour % 12 || 12) + ':' + String(minute).padStart(2, '0') + (hour < 12 ? ' AM' : ' PM');
 }
 
+function renderCommunityAdBody(element, body) {
+  let offset = 0;
+  for (const match of body.matchAll(/\bwww\.(?:[a-z0-9]+(?:-[a-z0-9]+)*\.)+[a-z]{2,}\b/gi)) {
+    const domain = match[0];
+    element.append(body.slice(offset, match.index));
+    const link = document.createElement('a');
+    link.href = 'https://' + domain;
+    link.textContent = domain;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    element.append(link);
+    offset = match.index + domain.length;
+  }
+  element.append(body.slice(offset));
+}
+
 function card(p){
   const c = catOf(p.cat);
   const el = document.createElement('article');
@@ -1298,11 +1315,14 @@ function card(p){
 
   const open=document.createElement('button');open.type='button';open.className='post-open';open.textContent=p.title;open.setAttribute('aria-label','View distance for '+p.title);open.onclick=()=>showPostDistance(p);el.querySelector('h4').append(open);
   el.addEventListener('click',e=>{if(!e.target.closest('button,a,input'))showPostDistance(p);});
-  el.querySelector('.body').textContent = p.body;
+  const body=el.querySelector('.body');
   if(p.notice){
-    el.id='community-ad-'+p.zip;
+    el.id='community-ad-'+p.id;
     const image=document.createElement('img');image.className='community-ad-image';image.src=p.image;image.alt=p.title+' '+p.body;image.loading='lazy';
-    el.querySelector('.body').before(image);
+    body.before(image);
+    renderCommunityAdBody(body, p.body);
+  } else {
+    body.textContent = p.body;
   }
   el.querySelector('.price').textContent = p.price;
   el.querySelector('.w').textContent = where;
@@ -1310,7 +1330,7 @@ function card(p){
   const reading=spokenPost?.id===p.id;
   hear.textContent=reading?'🔊 Restart reading':'🔊 Hear this post';hear.setAttribute('aria-pressed',reading?'true':'false');hear.setAttribute('aria-label','Hear this post: '+p.title);
   hear.disabled=!speechAvailable();if(hear.disabled){hear.textContent='Read aloud unavailable';hear.title='This browser does not support built-in text-to-speech.';}
-  hear.onclick=()=>hearPost(p);el.querySelector('.body').after(hear);
+  hear.onclick=()=>hearPost(p);body.after(hear);
   const days = (p.offerDays || []).map(day => OFFER_DAY_LABELS[day - 1]).filter(Boolean);
   if (days.length || (p.offerStart && p.offerEnd)) {
     const schedule = document.createElement('p');
